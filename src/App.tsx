@@ -22,6 +22,7 @@ import MobilePageTwoReported from './Project/FAMobile/PageTwo/Reported/reported'
 import ResultScan from './Project/FAMobile/PageTwo/Scan/ResultScan';
 import MyAssets from './Project/FAMobile/PageOne/MyAssets/MyAssets';
 import { CssBaseline, Box } from '@mui/material';
+import ResetPassword from './reset-password';
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -42,6 +43,8 @@ const App: React.FC = () => {
 
   const hasExpired = isMoreThanOneDayAgo(date_login);
   const token = localStorage.getItem('token');
+  const resetPasswordToken = localStorage.getItem('request_reset_token');
+  const changePassword = localStorage.getItem('changepassword');
 
   React.useEffect(() => {
     const checkDevice = () => {
@@ -55,12 +58,36 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener("resize", checkDevice);
     };
-  }, [token, hasExpired, currentPath, navigate]); // เพิ่ม navigate ใน dependency ตามคำแนะนำ React
+  }, [token, hasExpired, currentPath, navigate]);
 
-  if (!token || hasExpired) {
+  const checkLoginStatus = () => {
+    const resetPasswordData = localStorage.getItem('Request_ResetPassword');
+    
+    if (resetPasswordData || changePassword === 'false') {
+      return 'reset_password';
+    }
+
+    if (!token || hasExpired) {
+      return 'login';
+    }
+
+    return 'authenticated';
+  };
+
+  const loginStatus = checkLoginStatus();
+
+  console.log(loginStatus)
+  // แสดง Login page
+  if (loginStatus === 'login') {
     return <Login />;
   }
 
+  // แสดง Reset Password page
+  if (loginStatus === 'reset_password') {
+    return <ResetPassword />;
+  }
+
+  // แสดงระบบปกติ
   return (
     <Box
       sx={{

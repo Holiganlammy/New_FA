@@ -7,7 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Menu from '@mui/material/Menu';
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, Button, ListItemIcon, ListItemText, Stack } from '@mui/material';
 import { ThemeProvider, createTheme, styled, useTheme } from '@mui/material/styles';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
@@ -21,6 +21,7 @@ import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettin
 import { UserInfo } from '../type/nacType';
 import Axios from 'axios';
 import { dataConfig } from '../config';
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 const darkTheme = createTheme({
   palette: {
@@ -40,12 +41,12 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   justifyContent: 'flex-end',
 }));
 
-
 export default function MenuAppBar() {
   const theme = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [openTree, setOpenTree] = React.useState(false);
 
-  const navigate = useNavigate();
   const data = localStorage.getItem('data');
   const parsedData = data ? JSON.parse(data) : null;
   const [userData, setUserData] = React.useState<UserInfo>();
@@ -53,10 +54,12 @@ export default function MenuAppBar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [permission_menuID, setPermission_menuID] = React.useState<number[]>([]);
 
+  // ตรวจสอบว่าอยู่ในหน้า ResetPassword หรือไม่
+  const isResetPasswordPage = location.pathname === '/ResetPassword';
+
   React.useEffect(() => {
     const fetData = async () => {
       // POST request using axios with set header
-
       const body = { Permission_TypeID: 1, userID: parsedData.userid }
       const headers = {
         'Authorization': 'application/json; charset=utf-8',
@@ -70,7 +73,19 @@ export default function MenuAppBar() {
     fetData();
   }, []);
 
+  // ปิด drawer เมื่ออยู่ในหน้า ResetPassword
+  React.useEffect(() => {
+    if (isResetPasswordPage) {
+      setOpenTree(false);
+      setAnchorEl(null); // ปิด user menu ด้วย
+    }
+  }, [isResetPasswordPage]);
+
   const toggleDrawerTree = (newOpen: boolean) => () => {
+    // ห้ามเปิด drawer ในหน้า ResetPassword
+    if (isResetPasswordPage) {
+      return;
+    }
     setOpenTree(newOpen);
   };
 
@@ -89,15 +104,28 @@ export default function MenuAppBar() {
   const handleLogOut = () => {
     localStorage.clear();
     setAuth(false);
+    navigate('/');
     window.location.reload();
   };
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    // ห้ามเปิด user menu ในหน้า ResetPassword
+    if (isResetPasswordPage) {
+      return;
+    }
     setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNavigation = (path: string) => {
+    // ป้องกันการ navigate ในหน้า ResetPassword ยกเว้นการ logout
+    if (isResetPasswordPage && path !== '/') {
+      return;
+    }
+    navigate(path);
   };
 
   React.useEffect(() => {
@@ -112,7 +140,6 @@ export default function MenuAppBar() {
     }
   }, []);
 
-
   return (
     <Box sx={{ flexGrow: 1 }}>
       <ThemeProvider theme={darkTheme}>
@@ -121,33 +148,61 @@ export default function MenuAppBar() {
           color="default"
           elevation={0}
         >
-          <Drawer
-            sx={{
-              minWidth: 300,
-              flexShrink: 0,
-              '& .MuiDrawer-paper': {
+          {/* ไม่แสดง Drawer ในหน้า ResetPassword */}
+          {!isResetPasswordPage && (
+            <Drawer
+              sx={{
                 minWidth: 300,
-                boxSizing: 'border-box',
-              },
-            }}
-            open={openTree} onClose={toggleDrawerTree(false)}>
-            {DrawerList}
-          </Drawer>
+                flexShrink: 0,
+                '& .MuiDrawer-paper': {
+                  minWidth: 300,
+                  boxSizing: 'border-box',
+                },
+              }}
+              open={openTree} 
+              onClose={toggleDrawerTree(false)}
+            >
+              {DrawerList}
+            </Drawer>
+          )}
+          
           <Toolbar>
             <Stack direction="row" component="div" sx={{ flexGrow: 1 }}>
-              <IconButton
-                size="large"
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                sx={{ mr: 2 }}
-                onClick={toggleDrawerTree(true)}
+              {/* แสดง burger menu เฉพาะเมื่อไม่ได้อยู่ในหน้า ResetPassword */}
+              {!isResetPasswordPage && (
+                <IconButton
+                  size="large"
+                  edge="start"
+                  color="inherit"
+                  aria-label="menu"
+                  sx={{ mr: 2 }}
+                  onClick={toggleDrawerTree(true)}
+                >
+                  <MenuIcon />
+                </IconButton>
+              )}
+              
+              {/* แสดง Reset Password icon แทนเมื่ออยู่ในหน้า ResetPassword */}
+              {isResetPasswordPage && (
+                <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
+                  <LockResetIcon sx={{ color: 'warning.main', mr: 1 }} />
+                  <Typography variant="body2" color="warning.main">
+                    กำลังเปลี่ยนรหัสผ่าน
+                  </Typography>
+                </Box>
+              )}
+
+              <Button 
+                onClick={() => handleNavigation("/")} 
+                variant='text'
+                disabled={isResetPasswordPage}
+                sx={{
+                  opacity: isResetPasswordPage ? 0.5 : 1,
+                  cursor: isResetPasswordPage ? 'not-allowed' : 'pointer'
+                }}
               >
-                <MenuIcon />
-              </IconButton>
-              <Button onClick={() => navigate("/")} variant='text'>
                 <Typography
-                  style={{ color: '#ea0c80' }}
+                  style={{ color: isResetPasswordPage ? '#666' : '#ea0c80' }}
                   variant="body1"
                   sx={{
                     flexGrow: 1,
@@ -161,7 +216,7 @@ export default function MenuAppBar() {
                   <b>DATA</b>
                 </Typography>
                 <Typography
-                  style={{ color: '#07519e' }}
+                  style={{ color: isResetPasswordPage ? '#666' : '#07519e' }}
                   variant="body1"
                   sx={{
                     flexGrow: 1,
@@ -176,10 +231,12 @@ export default function MenuAppBar() {
                 </Typography>
               </Button>
             </Stack>
+            
             <Stack direction="row" component="div" spacing={2} sx={{ justifyContent: "center", alignItems: "center", }}>
               <Typography variant="body1">
                 <b>{userData?.name}</b>
               </Typography>
+              
               {auth && (
                 <div>
                   <IconButton
@@ -189,50 +246,108 @@ export default function MenuAppBar() {
                     aria-haspopup="true"
                     onClick={handleMenu}
                     color="inherit"
+                    disabled={isResetPasswordPage}
+                    sx={{
+                      opacity: isResetPasswordPage ? 0.5 : 1,
+                      cursor: isResetPasswordPage ? 'not-allowed' : 'pointer'
+                    }}
                   >
                     <Avatar
                       alt={userData && userData.UserCode || ''}
                       src={userData && userData.img_profile || ''}
-                      sx={{ width: 35, height: 35 }}
+                      sx={{ 
+                        width: 35, 
+                        height: 35,
+                        opacity: isResetPasswordPage ? 0.5 : 1
+                      }}
                     />
                   </IconButton>
-                  <Menu
-                    sx={{ mt: '45px' }}
-                    id="menu-appbar"
-                    anchorEl={anchorEl}
-                    anchorOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                    keepMounted
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                    open={Boolean(anchorEl)}
-                    onClose={handleClose}
-                  >
-                    <MenuItem disabled={userData?.depcode !== '101ITO'} onClick={() => navigate(`/Profile`)}>
-                      <ListItemIcon sx={{ minWidth: '15% !important' }}>
-                        <ManageAccountsOutlinedIcon />
-                      </ListItemIcon>
-                      <ListItemText>&nbsp; &nbsp;User Profile</ListItemText>
-                    </MenuItem>
-                    {permission_menuID.includes(20) && (
-                      <MenuItem onClick={() => navigate(`/ControlSection`)}>
+                  
+                  {/* User menu - ไม่แสดงในหน้า ResetPassword */}
+                  {!isResetPasswordPage && (
+                    <Menu
+                      sx={{ mt: '45px' }}
+                      id="menu-appbar"
+                      anchorEl={anchorEl}
+                      anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                      }}
+                      keepMounted
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                      }}
+                      open={Boolean(anchorEl)}
+                      onClose={handleClose}
+                    >
+                      <MenuItem 
+                        disabled={userData?.depcode !== '101ITO'} 
+                        onClick={() => handleNavigation('/Profile')}
+                      >
                         <ListItemIcon sx={{ minWidth: '15% !important' }}>
-                          <AdminPanelSettingsOutlinedIcon />
+                          <ManageAccountsOutlinedIcon />
                         </ListItemIcon>
-                        <ListItemText>&nbsp; &nbsp;Control section</ListItemText>
+                        <ListItemText>&nbsp; &nbsp;User Profile</ListItemText>
                       </MenuItem>
-                    )}
-                    <MenuItem onClick={handleLogOut}>
-                      <ListItemIcon sx={{ minWidth: '15% !important' }}>
-                        <LogoutOutlinedIcon />
-                      </ListItemIcon>
-                      <ListItemText>&nbsp; &nbsp;Log Out</ListItemText>
-                    </MenuItem>
-                  </Menu>
+                      
+                      {permission_menuID.includes(20) && (
+                        <MenuItem onClick={() => handleNavigation('/ControlSection')}>
+                          <ListItemIcon sx={{ minWidth: '15% !important' }}>
+                            <AdminPanelSettingsOutlinedIcon />
+                          </ListItemIcon>
+                          <ListItemText>&nbsp; &nbsp;Control section</ListItemText>
+                        </MenuItem>
+                      )}
+                      
+                      <MenuItem onClick={handleLogOut}>
+                        <ListItemIcon sx={{ minWidth: '15% !important' }}>
+                          <LogoutOutlinedIcon />
+                        </ListItemIcon>
+                        <ListItemText>&nbsp; &nbsp;Log Out</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  )}
+                  
+                  {/* แสดงเฉพาะปุ่ม Logout ในหน้า ResetPassword */}
+                  {isResetPasswordPage && (
+                    <Menu
+                      sx={{ mt: '45px' }}
+                      id="menu-appbar"
+                      anchorEl={anchorEl}
+                      anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                      }}
+                      keepMounted
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                      }}
+                      open={Boolean(anchorEl)}
+                      onClose={handleClose}
+                    >
+                      <MenuItem disabled>
+                        <ListItemIcon sx={{ minWidth: '15% !important' }}>
+                          <LockResetIcon />
+                        </ListItemIcon>
+                        <ListItemText>
+                          <Typography variant="body2" color="text.secondary">
+                            กรุณาเปลี่ยนรหัสผ่านก่อน
+                          </Typography>
+                        </ListItemText>
+                      </MenuItem>
+                      
+                      <Divider />
+                      
+                      <MenuItem onClick={handleLogOut}>
+                        <ListItemIcon sx={{ minWidth: '15% !important' }}>
+                          <LogoutOutlinedIcon />
+                        </ListItemIcon>
+                        <ListItemText>&nbsp; &nbsp;Log Out</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  )}
                 </div>
               )}
             </Stack>
@@ -242,4 +357,3 @@ export default function MenuAppBar() {
     </Box>
   );
 }
-// }
