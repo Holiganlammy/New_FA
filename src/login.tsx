@@ -16,6 +16,7 @@ import { styled } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 
 const defaultTheme = createTheme();
 
@@ -25,8 +26,11 @@ interface LoginCredentials {
 }
 
 interface LoginResponse {
+  changepassword: boolean;
   token?: string;
-  data: Array<{ userid: string }>;
+  data: Array<{ userid: string, changepassword: boolean }>;
+  expirepassword?: boolean;
+  request_reset_token?: string;
 }
 
 // เพื่อใช้ทดสอบ
@@ -78,6 +82,18 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 
 export default function SignInSide() {
 
+
+  // const loginSchema = z.object({
+  //   UserCode: z.string().min(1, 'กรุณากรอก UserCode'),
+  //   Password: z.string()
+  //     .min(8, 'Password ต้องมีความยาวอย่างน้อย 8 ตัวอักษร')
+  //     .regex(/[A-Z]/, 'Password ต้องมีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว')
+  //     .regex(/[a-zA-Z]/, 'Password ต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 1 ตัว')
+  //     .regex(/[0-9]/, 'Password ต้องมีตัวเลขอย่างน้อย 1 ตัว')
+  //     .regex(/[!@#$%^&*_\-]/, 'Password ต้องมีอักขระพิเศษ !@#$%^&*_- อย่างน้อย 1 ตัว')
+  // });
+
+  // type LoginSchema = z.infer<typeof loginSchema>;
   const [deviceType, setDeviceType] = React.useState<string>("mobile");
 
   const d = new Date();
@@ -91,6 +107,7 @@ export default function SignInSide() {
 
   const [UserCode, setUserCode] = React.useState<string | undefined>(undefined);
   const [Password, setPassword] = React.useState<string | undefined>(undefined);
+  const [shouldRedirectToReset, setShouldRedirectToReset] = React.useState(false);
   const URL_LINK = window.location.href;
   const pathname = window.location.pathname;
   const navigate = useNavigate();
@@ -107,27 +124,50 @@ export default function SignInSide() {
       return;
     }
 
+    // const result = loginSchema.safeParse({ UserCode, Password });
+    // if (!result.success) {
+    //   const errorMessages = result.error.issues.map((err) => err.message).join('\n');
+    //   Swal.fire({
+    //     icon: 'error',
+    //     title: errorMessages,
+    //     showConfirmButton: false,
+    //     timer: 5000,
+    //   });
+    //   return;
+    // }
+
     const response = await loginUser({
       UserCode,
       Password
     });
-
     if (deviceType === 'desktop') {
-      if ('token' in response) {
-        const body = { Permission_TypeID: 1, userID: response.data[0].userid };
+      if (response.expirepassword === true || response.changepassword === false) {
+        localStorage.setItem('Request_ResetPassword', JSON.stringify({
+          userId: response.data[0].userid,
+          reset_password_token: response.request_reset_token,
+          expirepassword: response.expirepassword
+        }));
+        localStorage.setItem('changepassword', String(response.changepassword));
+        
+        setShouldRedirectToReset(true);
+        return;
+      }
+
+      if (response.token) {
+        const body = { Permission_TypeID: 1, userID: response.data[0]?.userid };
         await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, dataConfig.headers)
           .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
             localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
           });
-        if (response.token) {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('data', JSON.stringify(response.data[0]));
-          localStorage.setItem('date_login', datenow);
-          if (pathname !== '/Sign-In') {
-            window.location.href = '/Home'
-          } else {
-            navigate(URL_LINK)
-          }
+
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('data', JSON.stringify(response.data[0]));
+        localStorage.setItem('date_login', datenow);
+
+        if (pathname !== '/Sign-In') {
+          window.location.href = '/Home'
+        } else {
+          navigate(URL_LINK)
         }
       } else {
         Swal.fire({
@@ -138,18 +178,27 @@ export default function SignInSide() {
         })
       }
     } else {
-      if ('token' in response) {
+      if (response.expirepassword === true || response.changepassword === false) {
+        localStorage.setItem('Request_ResetPassword', JSON.stringify({
+          userId: response.data[0].userid,
+          reset_password_token: response.request_reset_token
+        }));
+        localStorage.setItem('changepassword', String(response.changepassword));
+        
+        setShouldRedirectToReset(true);
+        return;
+      }
+      if (response.token) {
         const body = { Permission_TypeID: 1, userID: response.data[0].userid };
         await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, dataConfig.headers)
           .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
             localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
           });
-        if (response.token) {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('data', JSON.stringify(response.data[0]));
-          localStorage.setItem('date_login', datenow);
-          navigate('/MobileHome')
-        }
+
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('data', JSON.stringify(response.data[0]));
+        localStorage.setItem('date_login', datenow);
+        navigate('/MobileHome')
       } else {
         Swal.fire({
           icon: "error",
@@ -160,7 +209,13 @@ export default function SignInSide() {
       }
     }
   };
-
+  React.useEffect(() => {
+    if (shouldRedirectToReset) {
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    }
+  }, [shouldRedirectToReset]);
   React.useEffect(() => {
     const checkDevice = () => {
       const deviceType = window.innerWidth < 1100 ? "mobile" : "desktop"
