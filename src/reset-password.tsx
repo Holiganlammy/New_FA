@@ -17,6 +17,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { Visibility, VisibilityOff, CheckCircle, Cancel } from '@mui/icons-material';
 import { IconButton, InputAdornment, Alert } from '@mui/material';
+import { he } from 'zod/v4/locales/index.cjs';
 
 const defaultTheme = createTheme();
 
@@ -51,7 +52,8 @@ const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignSelf: 'center',
-  width: '100%',
+  width: '90%',
+  height: 'auto',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
   margin: 'auto',
@@ -59,6 +61,8 @@ const Card = styled(MuiCard)(({ theme }) => ({
     'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
   [theme.breakpoints.up('sm')]: {
     width: '450px',
+    maxHeight: '800px',
+    overflow: 'auto',
   },
   ...theme.applyStyles('dark', {
     boxShadow:
@@ -289,7 +293,7 @@ export default function ResetPassword() {
   return (
     <ThemeProvider theme={defaultTheme}>
       <CssBaseline enableColorScheme />
-      <ResetPasswordContainer direction="column" justifyContent="space-between">
+      <ResetPasswordContainer direction="column" justifyContent="space-between" alignItems="center">
         <Card variant="outlined">
           {/* แสดง Alert แจ้งเตือนตามสาเหตุ */}
           <Alert 
