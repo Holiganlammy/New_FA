@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, IconButton, ImageListItem, ImageListItemBar, Stack } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import Axios from 'axios';
 import Swal from 'sweetalert2';
-import { dataConfig } from '../../../config';
+import dataConfig from '../../../config';
 import { AssetRecord, UpdateDtlAssetParams } from '../../../type/nacType';
 import CloseIcon from '@mui/icons-material/Close';
+import client from '../../../lib/axios/interceptor';
 
 export interface Data {
   imagePath: string;
@@ -54,10 +54,10 @@ const ImageCell = ({ imagePath, name, rows, rowData, setRows, index, fieldData, 
     };
 
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/UpdateDtlAsset`,
+      const response = await client.post(
+        `/UpdateDtlAsset`,
         updatedRow,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
@@ -99,12 +99,12 @@ const ImageCell = ({ imagePath, name, rows, rowData, setRows, index, fieldData, 
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
-          setSelectedImage(`${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
+          setSelectedImage(`${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
           console.log(response);
 
         } catch (error) {
@@ -136,12 +136,12 @@ const ImageCell = ({ imagePath, name, rows, rowData, setRows, index, fieldData, 
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
-          setSelectedImage(`${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
+          setSelectedImage(`${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
         } catch (error) {
           console.error("Error uploading file:", error);
         }

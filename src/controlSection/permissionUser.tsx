@@ -6,11 +6,11 @@ import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { Autocomplete, Button, CardHeader, Divider, List, ListItem, ListItemText, Stack, styled, Switch, TextField } from '@mui/material';
 import { UserInfo, ResetPass, DataUser, Permission, MenuPermissionItem } from '../type/nacType';
-import Axios from 'axios';
 import Swal from 'sweetalert2';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import SaveIcon from '@mui/icons-material/Save';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import client from '../lib/axios/interceptor';
 
 const ValidationTextField = styled(TextField)(({ theme }) => ({
   width: '100%', // แทน fullWidth
@@ -26,22 +26,22 @@ export default function Profile() {
   const [menu, setMenu] = React.useState<MenuPermissionItem[]>([]);
 
   const fetuser = async () => {
-    await Axios.get(dataConfig.http + '/User_List', dataConfig.headers)
+    await client.get('/User_List', { headers: dataConfig().header })
       .then((res) => {
         setUsers(res.data)
       })
 
-    await Axios.post(dataConfig.http + '/Permission_Menu_NAC', {}, dataConfig.headers)
+    await client.post('/Permission_Menu_NAC', {}, { headers: dataConfig().header })
       .then((res) => {
         setMenu(res.data.data)
       })
   }
 
   const OnSelectUser = async (value: string) => {
-    await Axios.post(
-      dataConfig.http + '/Select_Permission_Menu_NAC',
+    await client.post(
+      '/Select_Permission_Menu_NAC',
       { Permission_TypeID: 1, UserCode: value },
-      dataConfig.headers
+      { headers: dataConfig().header }
     ).then((res) => {
       if (res.status === 200) {
         setUsersText(value)
@@ -68,17 +68,17 @@ export default function Profile() {
     };
 
     try {
-      const updateResponse = await Axios.post(
-        `${dataConfig.http}/Fix_Assets_Control_UPDATE_Permission`,
+      const updateResponse = await client.post(
+        '/Fix_Assets_Control_UPDATE_Permission',
         body,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (updateResponse.data.data) {
-        const Response = await Axios.post(
-          `${dataConfig.http}/Select_Permission_Menu_NAC`,
+        const Response = await client.post(
+          '/Select_Permission_Menu_NAC',
           bodyII,
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
         if (Response.data.data) {

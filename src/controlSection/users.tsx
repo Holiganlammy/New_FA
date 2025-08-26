@@ -6,9 +6,8 @@ import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { Alert, Autocomplete, Avatar, Button, CardHeader, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, InputAdornment, ListItem, ListItemAvatar, ListItemText, Stack, styled, TextField } from '@mui/material';
 import { Branch, DataUser, Department, UserSaved } from '../type/nacType';
-import Axios from 'axios';
 import Swal from 'sweetalert2';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import { GridColDef, GridActionsCellItem, GridCellParams, GridRowParams } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
@@ -21,6 +20,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneOutlineOutlinedIcon from '@mui/icons-material/DoneOutlineOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import client from '../lib/axios/interceptor';
 
 const ValidationTextField = styled(TextField)(({ theme }) => ({
   width: '100%', // แทน fullWidth
@@ -62,7 +62,7 @@ export default function Profile() {
 
   const User_Save = async () => {
     try {
-      const res = await Axios.post(dataConfig.http + '/User_Save', userSaved, dataConfig.headers)
+      const res = await client.post('/User_Save', userSaved, { headers: dataConfig().header })
       if (res.status === 200) {
         Swal.fire({
           icon: "success",
@@ -77,7 +77,7 @@ export default function Profile() {
   }
 
   const fetuser = async () => {
-    await Axios.get(dataConfig.http + '/User_List', dataConfig.headers)
+    await client.get('/User_List', { headers: dataConfig().header })
       .then((res) => {
         setUsers(res.data)
         setFilteredRows(res.data)
@@ -85,9 +85,9 @@ export default function Profile() {
       })
 
     // Fetch department list
-    await Axios.post<{ data: Department[] }>(`${dataConfig.http}/Department_List`, { branchid: parsedData.branchid }, dataConfig.headers)
+    await client.post('/Department_List', { branchid: parsedData.branchid }, { headers: dataConfig().header })
       .then((response) => {
-        const newArray = response.data.data.filter((dep) => dep.depid > 14);
+        const newArray = response.data.data.filter((dep: { depid: number; }) => dep.depid > 14);
         setDepartment(newArray);
       })
       .catch((error) => {
@@ -114,13 +114,13 @@ export default function Profile() {
 
   const handleChangeActive = async (params: GridRowParams<DataUser>) => {
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/User_active`,
+      const response = await client.post(
+        '/User_active',
         {
           userid: params.row.UserID,
           active: !params.row.Actived,
         },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       // อัปเดตสถานะของผู้ใช้ใน state
       setUsers((prevUsers) =>

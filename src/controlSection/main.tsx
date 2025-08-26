@@ -4,7 +4,7 @@ import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { Alert, alpha, AppBar, Avatar, Button, CardActions, CardHeader, Container, Divider, InputBase, List, ListItem, ListItemAvatar, ListItemText, Stack, styled, TextField, Toolbar } from '@mui/material';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import CorporateFareIcon from '@mui/icons-material/CorporateFare';
@@ -13,6 +13,7 @@ import ControlUsers from './users';
 import PermissionUsers from './permissionUser'
 import Organization from './organization/main'
 import PersonPinOutlinedIcon from '@mui/icons-material/PersonPinOutlined';
+import client from '../lib/axios/interceptor';
 
 interface LoginCredentials {
   UserCode: string;
@@ -25,12 +26,10 @@ interface LoginResponse {
 }
 
 async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await fetch(dataConfig.http + '/login', {
-    method: 'POST',
-    headers: dataConfig.headers,
-    body: JSON.stringify(credentials)
+  const response = await client.post('/login', JSON.stringify(credentials), {
+    headers: dataConfig().header,
   });
-  return response.json();
+  return response.data;
 }
 
 export default function Profile() {

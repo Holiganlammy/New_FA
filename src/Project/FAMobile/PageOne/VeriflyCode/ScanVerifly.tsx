@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/alt-text */
 import * as React from 'react';
 import Box from "@mui/material/Box";
-import { dataConfig } from "../../../../config";
+import dataConfig from "../../../../config";
 import { styled } from '@mui/material/styles';
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
@@ -9,7 +9,6 @@ import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Axios from 'axios';
 import { ImageList, ImageListItem, Stack, Dialog, DialogContent } from '@mui/material';
 import { Dayjs } from 'dayjs'; // Import Dayjs
 import utc from 'dayjs/plugin/utc';
@@ -18,6 +17,7 @@ import 'dayjs/locale/th'
 import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
 import Swal from 'sweetalert2';
+import client from '../../../../lib/axios/interceptor';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -61,7 +61,7 @@ export default function ScanVerifly({ qrText }: Readonly<ScanVeriflyProps>) {
   const fetuser = async () => {
     try {
       if (qrText) {
-        await Axios.post(dataConfig.http + '/check_code_result', { 'Code': qrText }, dataConfig.headers)
+        await client.post('/check_code_result', { 'Code': qrText }, { headers: dataConfig().header })
           .then((res) => {
             if (res.data.data.length > 0 && res.status === 200) {
               setQrData(res.data.data)

@@ -12,8 +12,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import Grid2 from '@mui/material/Grid2';
 import { FormControl, Box, OutlinedInput, Button, List, ListItem, ListItemText, Stack, Avatar, ListItemAvatar, InputLabel } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import Axios from 'axios';
-import { dataConfig } from '../../../../config';
+import dataConfig from '../../../../config';
 import { RequestCreateDocument, QureyNAC_Comment, SentNAC_File, QureyNAC_File, DataUser } from '../../../../type/nacType';
 import Swal from 'sweetalert2';
 import dayjs from 'dayjs';
@@ -23,6 +22,7 @@ import 'dayjs/locale/th'
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import FindInPageIcon from '@mui/icons-material/FindInPage';
 import ClearIcon from '@mui/icons-material/Clear';
+import client from '../../../../lib/axios/interceptor';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -69,9 +69,9 @@ export default function ChatCard({ nac_type, createDoc }: DataFromHeader) {
       })
     }
     try {
-      const res = await Axios.post(
-        dataConfig.http + '/stroe_FA_control_Path', datafileReq[0],
-        dataConfig.headers
+      const res = await client.post(
+        '/stroe_FA_control_Path', datafileReq[0],
+        { headers: dataConfig().header }
       );
       if (res.status === 200) {
         const list = [...datafileReq]
@@ -96,13 +96,13 @@ export default function ChatCard({ nac_type, createDoc }: DataFromHeader) {
 
   const handleSubmitComment = async () => {
     try {
-      const res = await Axios.post(
-        dataConfig.http + '/store_FA_control_comment', {
+      const res = await client.post(
+        '/store_FA_control_comment', {
         nac_code: createDoc[0].nac_code,
         usercode: parsedData.UserCode,
         comment: comment,
       },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       if (res.status === 200) {
         setDataComment(res.data)
@@ -124,13 +124,13 @@ export default function ChatCard({ nac_type, createDoc }: DataFromHeader) {
 
   const fetchComment = async () => {
     try {
-      await Axios.post(dataConfig.http + '/qureyNAC_comment', { nac_code: createDoc[0].nac_code }, dataConfig.headers)
+      await client.post(dataConfig().http + '/qureyNAC_comment', { nac_code: createDoc[0].nac_code }, { headers: dataConfig().header })
         .then((res) => {
           if (res.status === 200 && res.data.length > 0) {
             setDataComment(res.data)
           }
         })
-      await Axios.post(dataConfig.http + '/qureyNAC_path', { nac_code: createDoc[0].nac_code }, dataConfig.headers)
+      await client.post(dataConfig().http + '/qureyNAC_path', { nac_code: createDoc[0].nac_code }, { headers: dataConfig().header })
         .then((res) => {
           if (res.status === 200 && res.data.length > 0) {
             setDatafile(res.data)
@@ -156,15 +156,15 @@ export default function ChatCard({ nac_type, createDoc }: DataFromHeader) {
         formData_1.append("file", file);
         formData_1.append("fileName", file.name);
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
           // Check if the index is valid
           if (response.status === 200) {
             const list = [...datafileReq]
-            list[0].linkpath = `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            list[0].linkpath = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
             setDatafileReq(list); // Assuming you have a state setter for detailNAC
           }
         } catch (error) {
@@ -183,9 +183,9 @@ export default function ChatCard({ nac_type, createDoc }: DataFromHeader) {
 
   const fetDataUsers = async () => {
     try {
-      const res = await Axios.get(
-        `${dataConfig.http}/User_List`,
-        dataConfig.headers
+      const res = await client.get(
+        `/User_List`,
+        { headers: dataConfig().header }
       );
 
       if (res.status === 200) {

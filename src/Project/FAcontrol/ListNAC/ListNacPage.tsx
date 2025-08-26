@@ -10,10 +10,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid2';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
+import client from "../../../lib/axios/interceptor";
 
 
 
@@ -73,10 +73,10 @@ export default function ListNacPage() {
       const statusid: number = parseInt(event.target.value);
       const statusName: string = nac_status.find(res => Number(res.nac_status_id) === statusid)?.status_name ?? 'default status';
 
-      const changeStatus = await Axios.post(
-        dataConfig.http + `/FA_control_updateStatus`,
+      const changeStatus = await client.post(
+        `/FA_control_updateStatus`,
         { usercode: parsedData.UserCode, nac_code: nac_code, nac_status: statusid },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       if (changeStatus.status === 200) {
         // อัพเดตค่าใน grid
@@ -342,17 +342,17 @@ export default function ListNacPage() {
   const dropNAC = async (nac_code: string) => {
     const url: string = pathname === "/NAC_ROW" ? '/FA_Control_Select_MyNAC' : '/FA_Control_Select_MyNAC_Approve'
     try {
-      const response = await Axios.post(
-        dataConfig.http + '/store_FA_control_drop_NAC',
+      const response = await client.post(
+        '/store_FA_control_drop_NAC',
         { usercode: parsedData.UserCode, nac_code: nac_code },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
-        const responseAfterDrop = await Axios.post(
-          dataConfig.http + url,
+        const responseAfterDrop = await client.post(
+           url,
           { usercode: parsedData.UserCode },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
         if (responseAfterDrop.status === 200) {
           Swal.fire({
@@ -381,20 +381,20 @@ export default function ListNacPage() {
     const url: string = pathname === "/NAC_ROW" ? '/FA_Control_Select_MyNAC' : '/FA_Control_Select_MyNAC_Approve'
     // Fetch NAC data and filter data from localStorage
     try {
-      const resFetchAssets = await Axios.get(dataConfig.http + '/FA_Control_Assets_TypeGroup', dataConfig.headers)
+      const resFetchAssets = await client.get('/FA_Control_Assets_TypeGroup', { headers: dataConfig().header })
       const resData: Assets_TypeGroup[] = resFetchAssets.data
       setTypeGroup(resData)
       setTypeString(resData[0].typeCode)
 
-      const response = await Axios.post(
-        dataConfig.http + url,
+      const response = await client.post(
+        url,
         { usercode: parsedData.UserCode },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
-      const dataStatus = await Axios.get(
-        dataConfig.http + `/FA_Control_ListStatus`,
-        dataConfig.headers,
+      const dataStatus = await client.get(
+        `/FA_Control_ListStatus`,
+        { headers: dataConfig().header }
       );
 
       if (dataStatus.status === 200) {

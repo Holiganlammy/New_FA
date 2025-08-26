@@ -10,13 +10,13 @@ import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
 import Typography from '@mui/material/Typography';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Swal from 'sweetalert2';
-import { dataConfig } from "./config"
-import Axios from "axios";
+import  dataConfig  from "./config"
 import { styled } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import client from './lib/axios/interceptor';
 
 const defaultTheme = createTheme();
 
@@ -35,12 +35,10 @@ interface LoginResponse {
 
 // เพื่อใช้ทดสอบ
 async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await fetch(dataConfig.http + '/login', {
-    method: 'POST',
-    headers: dataConfig.headers,
-    body: JSON.stringify(credentials)
+  const response = await client.post('/login', JSON.stringify(credentials), {
+    headers: dataConfig().header,
   });
-  return response.json();
+  return response.data;
 }
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -155,7 +153,9 @@ export default function SignInSide() {
 
       if (response.token) {
         const body = { Permission_TypeID: 1, userID: response.data[0]?.userid };
-        await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, dataConfig.headers)
+        await client.post('/select_Permission_Menu_NAC', body, {
+          headers: dataConfig().header
+        })
           .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
             localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
           });
@@ -190,7 +190,9 @@ export default function SignInSide() {
       }
       if (response.token) {
         const body = { Permission_TypeID: 1, userID: response.data[0].userid };
-        await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, dataConfig.headers)
+        await client.post('/select_Permission_Menu_NAC', body, {
+          headers: dataConfig().header
+        })
           .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
             localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
           });

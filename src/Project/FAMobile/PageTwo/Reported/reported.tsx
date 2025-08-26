@@ -1,13 +1,12 @@
 import { GridCellParams, GridColDef } from "@mui/x-data-grid"
 import React from "react";
 import { Stack, Typography, AppBar, Toolbar, Box, CardContent, ImageList, Tab, Tabs, CircularProgress, IconButton, CardHeader, Container, CardActions, Tooltip, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } from "@mui/material";
-import Axios from 'axios';
 import { Outlet, useLocation, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import ImageCell from "./ClickOpenImg";
 import MuiCard from '@mui/material/Card';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { dataConfig } from "../../../../config";
+import dataConfig from "../../../../config";
 import { CountAssetRow, Assets_TypeGroup } from "../../../../type/nacType";
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import Fab from '@mui/material/Fab';
@@ -19,6 +18,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CloseIcon from '@mui/icons-material/Close';
 import { blue } from '@mui/material/colors';
 import Swal from "sweetalert2";
+import client from "../../../../lib/axios/interceptor";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -152,15 +152,15 @@ export default function MyAssets(props: Props) {
   const fetchData = async () => {
     try {
       if (parsedData) {
-        const response = await Axios.post(
-          `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+        const response = await client.post(
+          `/FA_Control_Report_All_Counted_by_Description`,
           { Description: dataLocation?.Description },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
-        const resFetchAssets = await Axios.get(
-          dataConfig.http + '/FA_Control_Assets_TypeGroup',
-          dataConfig.headers
+        const resFetchAssets = await client.get(
+          `/FA_Control_Assets_TypeGroup`,
+          { headers: dataConfig().header }
         );
 
         // Declare resData before using it
@@ -187,8 +187,8 @@ export default function MyAssets(props: Props) {
   };
 
   const updateReferent = async (value: string) => {
-    const response = await Axios.post(
-      `${dataConfig.http}/updateReference`,
+    const response = await client.post(
+      `/updateReference`,
       {
         "Reference": value,
         "Code": choice.Code,
@@ -197,7 +197,7 @@ export default function MyAssets(props: Props) {
         "BranchID": choice.BranchID,
         "Date": dayjs(Date.now()),
       },
-      dataConfig.headers
+      { headers: dataConfig().header }
     );
     if (response) {
       setChoice((prev) => ({ ...prev, Reference: value }))

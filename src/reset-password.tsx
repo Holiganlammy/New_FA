@@ -9,7 +9,7 @@ import LockClockIcon from '@mui/icons-material/LockClock';
 import Typography from '@mui/material/Typography';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Swal from 'sweetalert2';
-import { dataConfig } from "./config"
+import dataConfig from "./config"
 import { styled } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
@@ -33,10 +33,10 @@ interface ResetPasswordResponse {
 }
 
 async function resetPassword(data: ResetPasswordData, resetToken: string): Promise<ResetPasswordResponse> {
-  const response = await fetch(dataConfig.http + '/reset_password_expired', {
+  const response = await fetch(dataConfig().http + '/reset_password_expired', {
     method: 'POST',
     headers: {
-      ...dataConfig.headers,
+      ...dataConfig().header,
       'Authorization': `Bearer ${resetToken}`,
     },
     body: JSON.stringify({

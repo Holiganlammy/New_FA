@@ -5,14 +5,14 @@ import { alpha, Autocomplete, Box, Button, Dialog, DialogActions, DialogContent,
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { NumericFormat, NumericFormatProps } from 'react-number-format';
 import { format } from 'date-fns';
-import { dataConfig } from '../../../config';
-import Axios from 'axios'
+import dataConfig from '../../../config';
 import Swal from 'sweetalert2';
 import FilePresentIcon from '@mui/icons-material/FilePresent';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloseIcon from '@mui/icons-material/Close';
 import { styled } from '@mui/material/styles';
 import dayjs from 'dayjs';
+import client from '../../../lib/axios/interceptor';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -89,7 +89,7 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
 
   const handleCloseImage = async () => {
     const index = detailNAC.findIndex(res => res.nacdtl_image_1 === selectedImage?.url || res.nacdtl_image_2 === selectedImage?.url)
-    const response = await Axios.post(dataConfig.http + '/FA_control_update_DTL', {
+    const response = await client.post('/FA_control_update_DTL', {
       usercode: parsedData.UserCode,
       nac_code: detailNAC[index].nac_code,
       nacdtl_assetsCode: detailNAC[index].nacdtl_assetsCode,
@@ -100,7 +100,7 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
       image_1: detailNAC[index].nacdtl_image_1,
       image_2: detailNAC[index].nacdtl_image_2,
 
-    }, dataConfig.headers)
+    }, { headers: dataConfig().header })
     console.log(response);
     if (response.status === 200) {
       setOpenDialogImage(false);
@@ -159,7 +159,7 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
 
   const handleChangeAuto = async (newValue: string | null, indexDtl: number) => {
 
-    await Axios.post(dataConfig.http + '/FA_Control_CheckAssetCode_Process', { nacdtl_assetsCode: newValue }, dataConfig.headers)
+    await client.post('/FA_Control_CheckAssetCode_Process', { nacdtl_assetsCode: newValue }, { headers: dataConfig().header })
       .then((res) => {
         if (res.status === 200) {
           Swal.fire({
@@ -193,10 +193,10 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
 
           const list = [...detailNAC];
@@ -204,10 +204,10 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
           // Check if the index is valid
           if (list[index]) {
             // Make sure nacdtl_image_1 exists
-            list[index].nacdtl_image_1 = `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            list[index].nacdtl_image_1 = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
             setDetailNAC(list); // Assuming you have a state setter for detailNAC
             setSelectedImageImage({
-              url: `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
+              url: `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
               Imagtype: 'nacdtl_image_1',
               indexImg: index
             });
@@ -243,10 +243,10 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
 
           const list = [...detailNAC];
@@ -254,10 +254,10 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
           // Check if the index is valid
           if (list[index]) {
             // Make sure nacdtl_image_2 exists
-            list[index].nacdtl_image_2 = `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            list[index].nacdtl_image_2 = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
             setDetailNAC(list); // Assuming you have a state setter for detailNAC
             setSelectedImageImage({
-              url: `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
+              url: `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
               Imagtype: 'nacdtl_image_2',
               indexImg: index
             });

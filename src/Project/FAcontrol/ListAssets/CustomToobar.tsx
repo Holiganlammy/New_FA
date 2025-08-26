@@ -11,11 +11,11 @@ import * as XLSX from 'xlsx';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import Swal from "sweetalert2";
-import Axios from 'axios';
-import { dataConfig } from "../../../config";
+import dataConfig from "../../../config";
 import CircularProgress, {
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
+import client from "../../../lib/axios/interceptor";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -264,10 +264,10 @@ export default function CustomToolbar({ rows, users, assets_TypeGroup, setTimer,
   const handleSubmitXlsx = async () => {
     try {
       setOpenXlsx(false);
-      const resTAB = await Axios.post(
-        `${dataConfig.http}/FA_Control_BPC_Running_NO`,
+      const resTAB = await client.post(
+        `/FA_Control_BPC_Running_NO`,
         parsedData,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       const keyID = resTAB.data[0]?.TAB;
       if (!keyID) throw new Error("Failed to retrieve keyID");
@@ -280,10 +280,10 @@ export default function CustomToolbar({ rows, users, assets_TypeGroup, setTimer,
           keyID,
         };
 
-        const response = await Axios.post(
-          `${dataConfig.http}/FA_Control_New_Assets_Xlsx`,
+        const response = await client.post(
+          `/FA_Control_New_Assets_Xlsx`,
           body,
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
         if (response.data[0]?.res) {
@@ -299,10 +299,10 @@ export default function CustomToolbar({ rows, users, assets_TypeGroup, setTimer,
         if (i === totalItems - 1) {
           setTimer(0)
           const finalBody = { count: totalItems, keyID };
-          const finalResponse = await Axios.post(
-            `${dataConfig.http}/FA_Control_import_dataXLSX_toAssets`,
+          const finalResponse = await client.post(
+            `/FA_Control_import_dataXLSX_toAssets`,
             finalBody,
-            dataConfig.headers
+            { headers: dataConfig().header }
           );
           const finalResponseMsg = finalResponse.data[0]?.response;
           if (finalResponseMsg === "ทำรายการสำเร็จ") {

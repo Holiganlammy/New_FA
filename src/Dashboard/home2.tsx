@@ -13,13 +13,14 @@ import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { CountAssetRow, PeriodDescription, NAC_Backlog } from '../type/nacType';
 import Axios from 'axios';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import SquareIcon from '@mui/icons-material/Square';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { GridCellParams, GridColDef } from '@mui/x-data-grid';
 import DataTable from './DataTable';
 import { useDrawingArea } from '@mui/x-charts/hooks';
 import { styled } from '@mui/material/styles';
+import client from '../lib/axios/interceptor';
 
 type PieCenterLabelProps = {
   primaryText: string | number;
@@ -195,10 +196,10 @@ const MenuAppBar: React.FC = () => {
 
     if (newValue) {
       try {
-        const resData = await Axios.post(
-          `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+        const resData = await client.post(
+          '/FA_Control_Report_All_Counted_by_Description',
           { Description: newValue },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
         if (resData.status === 200) {
@@ -217,9 +218,9 @@ const MenuAppBar: React.FC = () => {
   const fetNac_Blocking = async () => {
     try {
       setLoading(true);
-      const response = await Axios.get(
-        `${dataConfig.http}/FA_Control_NAC_Backlog`,
-        dataConfig.headers
+      const response = await client.get(
+        '/FA_Control_NAC_Backlog',
+        { headers: dataConfig().header }
       );
       if (response.status === 200) {
         const rawData: NAC_Backlog[] = response.data;
@@ -235,18 +236,18 @@ const MenuAppBar: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+      const response = await client.post(
+        '/FA_Control_Report_All_Counted_by_Description',
         { Description: '' },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       if (response.status === 200) {
         setOptionDct(response.data);
         setOptionDctString(response.data[0].Description);
-        const resData = await Axios.post(
-          `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+        const resData = await client.post(
+          '/FA_Control_Report_All_Counted_by_Description',
           { Description: response.data[0].Description },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
         if (resData.status === 200) {
@@ -264,16 +265,16 @@ const MenuAppBar: React.FC = () => {
 
   const fetchDataAnnualGraph = async () => {
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+      const response = await client.post(
+        '/FA_Control_Report_All_Counted_by_Description',
         { Description: '' },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
-        const resData = await Axios.get(
-          `${dataConfig.http}/FA_Control_AnnualGraph`,
-          dataConfig.headers
+        const resData = await client.get(
+          '/FA_Control_AnnualGraph',
+          { headers: dataConfig().header }
         );
 
         if (resData.status === 200) {
@@ -288,10 +289,10 @@ const MenuAppBar: React.FC = () => {
   };
 
   const fetAllAsset = async () => {
-    const response = await Axios.post(
-      `${dataConfig.http}/FA_Control_Fetch_Assets`,
+    const response = await client.post(
+      '/FA_Control_Fetch_Assets',
       { usercode: parsedData.UserCode },
-      dataConfig.headers
+      { headers: dataConfig().header }
     );
     if (response.status === 200) {
       setCountAllAsset(response.data.length)

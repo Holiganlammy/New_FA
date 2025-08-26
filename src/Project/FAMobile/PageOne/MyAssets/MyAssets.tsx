@@ -1,14 +1,13 @@
 import { GridCellParams, GridColDef } from "@mui/x-data-grid"
 import React from "react";
 import { Stack, Typography, AppBar, Toolbar, Box, CardContent, ImageList, Tab, Tabs, CircularProgress, IconButton, CardHeader, Container } from "@mui/material";
-import Axios from 'axios';
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import Grid from '@mui/material/Grid2';
 import ImageCell from "./ClickOpenImg";
 import MuiCard from '@mui/material/Card';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { dataConfig } from "../../../../config";
+import dataConfig from "../../../../config";
 import { AssetRecord, Assets_TypeGroup } from "../../../../type/nacType";
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import Fab from '@mui/material/Fab';
@@ -16,6 +15,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Fade from '@mui/material/Fade';
 import { ThemeProvider, createTheme, styled, useTheme } from '@mui/material/styles';
 import NavBarMobile from '../../NavMain/NavbarMobile'
+import client from "../../../../lib/axios/interceptor";
 
 const darkTheme = createTheme({
   palette: {
@@ -113,15 +113,15 @@ export default function MyAssets(props: Props) {
   const fetchData = async () => {
     try {
       if (parsedData) {
-        const response = await Axios.post(
-          `${dataConfig.http}/FA_Control_Fetch_Assets`,
+        const response = await client.post(
+          `/FA_Control_Fetch_Assets`,
           { usercode: parsedData.UserCode },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
-        const resFetchAssets = await Axios.get(
-          dataConfig.http + '/FA_Control_Assets_TypeGroup',
-          dataConfig.headers
+        const resFetchAssets = await client.get(
+          `/FA_Control_Assets_TypeGroup`,
+          { headers: dataConfig().header }
         );
 
         // Declare resData before using it

@@ -6,11 +6,11 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Fade from '@mui/material/Fade';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Axios from 'axios';
-import { dataConfig } from "../../../../config";
+import dataConfig from "../../../../config";
 import NavBarMobile from '../../NavMain/NavbarMobile'
 import dayjs, { Dayjs } from "dayjs";
 import { useLocation, useNavigate } from "react-router-dom";
+import client from "../../../../lib/axios/interceptor";
 
 const darkTheme = createTheme({
   palette: {
@@ -83,12 +83,12 @@ export default function MainPageTow(props: Props) {
 
   const fetchPermissionB = async () => {
     try {
-      await Axios.post(dataConfig.http + '/period_round',
+      await client.post('/period_round',
         {
           BranchID: Number(dataLocation?.branchSelect) || null,
           depCode: parsedData.depcode || null,
           personID: parsedData.UserCode || null,
-        }, dataConfig.headers)
+        }, { headers: dataConfig().header })
         .then((res) => {
           setRound(res.data);
         });

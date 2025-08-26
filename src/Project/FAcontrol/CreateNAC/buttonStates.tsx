@@ -3,9 +3,9 @@ import Button from '@mui/material/Button';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import Stack from '@mui/material/Stack';
-import Axios from 'axios';
 import Swal from 'sweetalert2';
-import { dataConfig } from '../../../config';
+import dataConfig from '../../../config';
+
 import { RequestCreateDocument, FAControlCreateDetail, WorkflowApproval } from '../../../type/nacType';
 import BackspaceIcon from '@mui/icons-material/Backspace';
 import UpdateIcon from '@mui/icons-material/Update';
@@ -15,6 +15,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/th'
 import { useNavigate } from 'react-router-dom';
+import client from '../../../lib/axios/interceptor';
 
 
 dayjs.extend(utc);
@@ -117,10 +118,10 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
       // ส่งข้อมูล Header
       const header = { ...createDoc[0], nac_status: createDoc[0].nac_status ? createDoc[0].nac_status : 1, usercode: parsedData.UserCode };
 
-      const res = await Axios.post(
-        `${dataConfig.http}/FA_Control_Create_Document_NAC`,
+      const res = await client.post(
+        `/FA_Control_Create_Document_NAC`,
         header,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       console.log(res);
 
@@ -132,8 +133,8 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
         if (createDoc[0].nac_status === 6) {
           await Promise.all(
             detailNAC.map(item =>
-              Axios.post(
-                `${dataConfig.http}/store_FA_control_upadate_table`,
+              client.post(
+                `/store_FA_control_upadate_table`,
                 {
                   nac_code: createDoc[0].nac_code,
                   usercode: parsedData.UserCode,
@@ -141,7 +142,7 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
                   nac_type: createDoc[0].nac_type,
                   nac_status: createDoc[0].nac_status
                 },
-                dataConfig.headers
+                { headers: dataConfig().header }
               )
             )
           );
@@ -359,14 +360,14 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
       confirmButtonText: "Yes",
       showLoaderOnConfirm: true,
       preConfirm: async (body) => {
-        const response = await Axios.post(
-          dataConfig.http + '/store_FA_control_comment',
+        const response = await client.post(
+          '/store_FA_control_comment',
           {
             nac_code: createDoc[0].nac_code,
             usercode: parsedData.UserCode,
             comment: body,
           },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
         if (response.status === 200) {
           const header = [...createDoc]
@@ -401,14 +402,14 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
       confirmButtonText: "Yes",
       showLoaderOnConfirm: true,
       preConfirm: async (body) => {
-        const response = await Axios.post(
-          dataConfig.http + '/store_FA_control_comment',
+        const response = await client.post(
+          '/store_FA_control_comment',
           {
             nac_code: createDoc[0].nac_code,
             usercode: parsedData.UserCode,
             comment: body,
           },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
         if (response.status === 200) {
           const header = [...createDoc]
@@ -453,9 +454,9 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
         nacdtl_image_2: detail.nacdtl_image_2 ?? null,
       }));
       for (let i = 0; i < requestData.length; i++) {
-        const response = await Axios.post(dataConfig.http + '/FA_Control_Create_Detail_NAC', requestData[i], dataConfig.headers);
+        const response = await client.post('/FA_Control_Create_Detail_NAC', requestData[i], { headers: dataConfig().header });
         if (response.status === 200 && (response.data[0].count_nac === requestData.length)) {
-          await Axios.post(dataConfig.http + '/store_FA_SendMail', { nac_code: nac_code }, dataConfig.headers);
+          await client.post('/store_FA_SendMail', { nac_code: nac_code }, { headers: dataConfig().header });
           setOpenBackdrop(false);
           Swal.fire({
             icon: "success",

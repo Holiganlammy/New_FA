@@ -19,9 +19,9 @@ import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import { UserInfo } from '../type/nacType';
-import Axios from 'axios';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import client from '../lib/axios/interceptor';
 
 const darkTheme = createTheme({
   palette: {
@@ -59,13 +59,9 @@ export default function MenuAppBar() {
 
   React.useEffect(() => {
     const fetData = async () => {
-      // POST request using axios with set header
       const body = { Permission_TypeID: 1, userID: parsedData.userid }
-      const headers = {
-        'Authorization': 'application/json; charset=utf-8',
-        'Accept': 'application/json'
-      };
-      await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, { headers })
+  
+      await client.post('/select_Permission_Menu_NAC', body, { headers: dataConfig().header })
         .then(response => {
           setPermission_menuID(response.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
         });

@@ -3,11 +3,11 @@ import DataTable from "./DataTable"
 import React from "react";
 import { NACDetailHistory, ListNACHeaders, Assets_TypeGroup, AssetRecord } from '../../../type/nacType';
 import { Typography, AppBar, Container, Toolbar, Autocomplete, TextField, Card, CssBaseline, Tab, Tabs } from "@mui/material";
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import ArticleIcon from '@mui/icons-material/Article';
 import Grid from '@mui/material/Grid2';
+import client from "../../../lib/axios/interceptor";
 
 export default function ListNacPage() {
   const data = localStorage.getItem('data');
@@ -102,12 +102,12 @@ export default function ListNacPage() {
     const fetchData = async () => {
       try {
 
-        const resFetchAssets = await Axios.get(dataConfig.http + '/FA_Control_Assets_TypeGroup', dataConfig.headers)
+        const resFetchAssets = await client.get('/FA_Control_Assets_TypeGroup', { headers: dataConfig().header })
         const resData: Assets_TypeGroup[] = resFetchAssets.data
         setAssets_TypeGroup(resData)
         setAssets_TypeGroupSelect(resData[0].typeCode)
 
-        await Axios.post(`${dataConfig.http}/store_FA_control_HistorysAssets`, { userCode: parsedData.UserCode }, dataConfig.headers)
+        await client.post(`/store_FA_control_HistorysAssets`, { userCode: parsedData.UserCode }, { headers: dataConfig().header })
           .then((res) => {
             if (res.status === 200) {
               setLoading(false)

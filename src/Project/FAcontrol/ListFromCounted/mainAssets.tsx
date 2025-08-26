@@ -5,8 +5,7 @@ import { CountAssetRow, PeriodDescription, Assets_TypeGroup } from '../../../typ
 import { Stack, Typography, AppBar, Container, Toolbar, Autocomplete, TextField, Box, FormControl, Select, SelectChangeEvent, Dialog, DialogContent, DialogTitle, IconButton, Button, DialogActions, CssBaseline, Card, Tab, Tabs } from "@mui/material";
 import FindInPageIcon from '@mui/icons-material/FindInPage'
 import Chip from '@mui/material/Chip';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import Grid from '@mui/material/Grid2';
@@ -14,6 +13,7 @@ import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import Swal from "sweetalert2";
+import client from "../../../lib/axios/interceptor";
 
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
@@ -89,7 +89,7 @@ export default function ListNacPage() {
     const handleChange = async (event: SelectChangeEvent) => {
       const reference: string = event.target.value;
       const referenceName: string = reference ? statusAll.find(res => res === reference) : currentValue;
-      await Axios.post(`${dataConfig.http}/FA_Control_UpdateDetailCounted`, {
+      await client.post(`/FA_Control_UpdateDetailCounted`, {
         roundid: optionDct && optionDctString
           ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
           : 0,
@@ -100,7 +100,7 @@ export default function ListNacPage() {
         image_1: row.ImagePath,
         image_2: row.ImagePath_2,
         userid: parsedData.userid,
-      }, dataConfig.headers)
+      }, { headers: dataConfig().header })
         .then(async res => {
           if (res.status === 200) {
             await apiRef.current.setEditCellValue({ id, field, value: referenceName });
@@ -150,7 +150,7 @@ export default function ListNacPage() {
     const handleChange = async (event: SelectChangeEvent) => {
       const status: string = event.target.value;
       const statusName: string = status ? statusAll.find(res => res === status) : currentValue;
-      await Axios.post(`${dataConfig.http}/FA_Control_UpdateDetailCounted`, {
+      await client.post(`/FA_Control_UpdateDetailCounted`, {
         roundid: optionDct && optionDctString
           ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
           : 0,
@@ -161,7 +161,7 @@ export default function ListNacPage() {
         image_1: row.ImagePath,
         image_2: row.ImagePath_2,
         userid: parsedData.userid,
-      }, dataConfig.headers)
+      }, { headers: dataConfig().header })
         .then(async res => {
           if (res.status === 200) {
             await apiRef.current.setEditCellValue({ id, field, value: statusName });
@@ -216,7 +216,7 @@ export default function ListNacPage() {
 
     const handleBlurEndEdit = async () => {
       try {
-        await Axios.post(`${dataConfig.http}/FA_Control_UpdateDetailCounted`, {
+        await client.post(`/FA_Control_UpdateDetailCounted`, {
           roundid: optionDct && optionDctString
             ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
             : 0,
@@ -227,7 +227,7 @@ export default function ListNacPage() {
           image_1: row.ImagePath,
           image_2: row.ImagePath_2,
           userid: parsedData.userid,
-        }, dataConfig.headers)
+        }, { headers: dataConfig().header })
           .then(async res => {
             if (res.status === 200) {
               await apiRef.current.setEditCellValue({ id, field, value: currentValue });
@@ -346,10 +346,10 @@ export default function ListNacPage() {
 
     if (newValue) {
       try {
-        const resData = await Axios.post(
-          `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+        const resData = await client.post(
+          `/FA_Control_Report_All_Counted_by_Description`,
           { Description: newValue },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
         if (resData.status === 200) {
@@ -378,18 +378,18 @@ export default function ListNacPage() {
     setLoading(true)
     const fetchData = async () => {
       try {
-        const response = await Axios.post(
-          `${dataConfig.http}/FA_Control_Report_All_Counted_by_Description`,
+        const response = await client.post(
+          `/FA_Control_Report_All_Counted_by_Description`,
           { Description: '' },
-          dataConfig.headers
+          { headers: dataConfig().header }
         );
 
-        const resFetchAssets = await Axios.get(dataConfig.http + '/FA_Control_Assets_TypeGroup', dataConfig.headers)
+        const resFetchAssets = await client.get(`/FA_Control_Assets_TypeGroup`, { headers: dataConfig().header })
         const resData: Assets_TypeGroup[] = resFetchAssets.data
         setAssets_TypeGroup(resData)
         setAssets_TypeGroupSelect(resData[0].typeCode)
 
-        const permiss = await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, dataConfig.headers)
+        const permiss = await client.post(`/select_Permission_Menu_NAC`, { Permission_TypeID: 1, userID: parsedData.userid }, { headers: dataConfig().header })
         setPermission_menuID(permiss.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
 
         if (response.status === 200) {
@@ -423,19 +423,19 @@ export default function ListNacPage() {
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            `/check_files_NewNAC`,
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
 
           const list = [...rows];
           const index = rows.findIndex(res => res.ImagePath === imageSrc || res.ImagePath_2 === imageSrc);
           if (index !== -1) {
             const matchedKey = list[index].ImagePath === imageSrc ? 'ImagePath' : 'ImagePath_2';
-            list[index][matchedKey] = `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            list[index][matchedKey] = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
             try {
-              await Axios.post(`${dataConfig.http}/FA_Control_UpdateDetailCounted`, {
+              await client.post(`/FA_Control_UpdateDetailCounted`, {
                 roundid: optionDct && optionDctString
                   ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
                   : 0,
@@ -443,14 +443,14 @@ export default function ListNacPage() {
                 status: list[index].remarker === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
                 comment: list[index].comment,
                 reference: list[index].Reference,
-                image_1: list[index].ImagePath === imageSrc ? `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}` : list[index].ImagePath,
-                image_2: list[index].ImagePath === imageSrc ? list[index].ImagePath_2 : `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
+                image_1: list[index].ImagePath === imageSrc ? `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}` : list[index].ImagePath,
+                image_2: list[index].ImagePath === imageSrc ? list[index].ImagePath_2 : `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
                 userid: parsedData.userid,
-              }, dataConfig.headers)
+              }, { headers: dataConfig().header })
                 .then(() => {
                   setRows(list);
                   setOriginalRows(list);
-                  setImageSrc(`${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
+                  setImageSrc(`${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
                 })
             } catch (e) {
               console.error(e);

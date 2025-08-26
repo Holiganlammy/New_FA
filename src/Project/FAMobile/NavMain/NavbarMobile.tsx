@@ -20,8 +20,7 @@ import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import { UserInfo } from '../../../type/nacType';
-import Axios from 'axios';
-import { dataConfig } from '../../../config';
+import dataConfig from '../../../config';
 import Login from '../../../login';
 
 const darkTheme = createTheme({

@@ -12,11 +12,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import Fade from '@mui/material/Fade';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { ThemeProvider, createTheme, styled, useTheme } from '@mui/material/styles';
-import Axios from 'axios';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import { dataConfig } from "../../../config";
+import dataConfig from "../../../config";
 import NavBarMobile from '../NavMain/NavbarMobile'
 import { useLocation, useNavigate } from "react-router-dom";
 

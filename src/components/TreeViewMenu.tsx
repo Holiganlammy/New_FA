@@ -4,8 +4,7 @@ import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import CustomTreeItem from './CustomTreeIcon';
-import Axios from "axios"
-import { dataConfig } from "../config";
+import dataConfig from "../config";
 import { MenuItemTree } from '../type/nacType';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import { Outlet, useNavigate } from "react-router";
@@ -14,6 +13,7 @@ import AvTimerOutlinedIcon from '@mui/icons-material/AvTimerOutlined';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLongOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import GroupAddOutlinedIcon from '@mui/icons-material/GroupAddOutlined';
+import client from '../lib/axios/interceptor';
 
 function DotIcon() {
   return (
@@ -82,11 +82,7 @@ export default function CustomStyling() {
       // POST request using axios with set header
 
       const body = { Permission_TypeID: 1, userID: parsedData.userid }
-      const headers = {
-        'Authorization': 'application/json; charset=utf-8',
-        'Accept': 'application/json'
-      };
-      await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', body, { headers })
+      await client.post('/select_Permission_Menu_NAC', body, { headers: dataConfig().header })
         .then(response => {
           setPermission_menuID(response.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
         });

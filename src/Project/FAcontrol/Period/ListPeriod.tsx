@@ -5,8 +5,7 @@ import { Period } from '../../../type/nacType';
 import { Typography, AppBar, Container, Toolbar, TextField, Dialog, styled, Button, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, CssBaseline, Card } from "@mui/material";
 import Swal from "sweetalert2";
 import DeleteIcon from '@mui/icons-material/Delete';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import { LocalizationProvider, DateTimePicker, renderDigitalClockTimeView, } from '@mui/x-date-pickers';
@@ -17,6 +16,7 @@ import Grid from '@mui/material/Grid2';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/th'
+import client from "../../../lib/axios/interceptor";
 
 
 dayjs.extend(utc);
@@ -54,10 +54,10 @@ export default function ListNacPage() {
   const handleCloseSaved = async () => {
     setOpenDialogEdit(false);
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/update_period`,
+      const response = await client.post(
+        `/update_period`,
         rowEdit,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
@@ -164,10 +164,10 @@ export default function ListNacPage() {
 
   const fetchData = React.useCallback(async () => {
     try {
-      const response = await Axios.post(
-        dataConfig.http + `/FA_Control_Fetch_Branch_Period`,
+      const response = await client.post(
+        `/FA_Control_Fetch_Branch_Period`,
         { usercode: parsedData.UserCode },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
@@ -190,10 +190,10 @@ export default function ListNacPage() {
       confirmButtonText: `Yes`
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await Axios.post(
-          dataConfig.http + `/delete_period`,
+        await client.post(
+          `/delete_period`,
           { PeriodID: params?.PeriodID },
-          dataConfig.headers
+          { headers: dataConfig().header }
         ).then(() => fetchData());
       }
     });

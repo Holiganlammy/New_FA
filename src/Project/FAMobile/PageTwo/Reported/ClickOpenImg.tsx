@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { CardMedia, ImageListItem } from '@mui/material';
-import Axios from 'axios';
-import { dataConfig } from '../../../../config';
+import dataConfig from '../../../../config';
 import { CountAssetRow, UpdateDtlAssetParams } from '../../../../type/nacType';
 import Swal from 'sweetalert2';
+import client from '../../../../lib/axios/interceptor';
 
 export interface Data {
   imagePath: string;
@@ -86,16 +86,16 @@ const ImageCell = ({ imagePath, name, rows, setRows, index, fieldData, originalR
         formData_1.append("file", file);
         formData_1.append("fileName", file.name);
 
-        const responseFile = await Axios.post(
-          `${dataConfig.http}/check_files_NewNAC`,
+        const responseFile = await client.post(
+          `/check_files_NewNAC`,
           formData_1,
-          dataConfig.headerUploadFile
+          { headers: dataConfig().header }
         );
 
         console.log("Upload file response:", responseFile);
 
         if (responseFile.status === 200 && responseFile.data.attach?.[0]?.ATT) {
-          const selectedImageRes = `${dataConfig.httpViewFile}/NEW_NAC/${responseFile.data.attach[0].ATT}.jpg`;
+          const selectedImageRes = `${dataConfig().httpViewFile}/NEW_NAC/${responseFile.data.attach[0].ATT}.jpg`;
 
           // อัปเดตข้อมูลภาพ
           const indexOriginalRows = originalRows.findIndex((row) => row.Code === rows[indexCode].Code);
@@ -120,10 +120,10 @@ const ImageCell = ({ imagePath, name, rows, setRows, index, fieldData, originalR
           console.log("Sending to FA_Mobile_UploadImage:", payload);
 
           try {
-            const response = await Axios.post(
-              `${dataConfig.http}/FA_Mobile_UploadImage`,
+            const response = await client.post(
+              `/FA_Mobile_UploadImage`,
               payload,
-              dataConfig.headers
+              { headers: dataConfig().header }
             );
             if (response.status === 200) {
               fetchData();

@@ -1,9 +1,9 @@
 import React from 'react';
 import { CardMedia, ImageListItem } from '@mui/material';
-import Axios from 'axios';
-import { dataConfig } from '../../../../config';
+import dataConfig from '../../../../config';
 import { AssetRecord } from '../../../../type/nacType';
 import Swal from 'sweetalert2';
+import client from '../../../../lib/axios/interceptor';
 
 export interface Data {
   imagePath: string;
@@ -87,16 +87,16 @@ const ImageCell = ({ imagePath, name, rows, setRows, index, fieldData, originalR
         formData_1.append("file", file);
         formData_1.append("fileName", file.name);
 
-        const response = await Axios.post(
-          `${dataConfig.http}/check_files_NewNAC`,
+        const response = await client.post(
+          `/check_files_NewNAC`,
           formData_1,
-          dataConfig.headerUploadFile
+          { headers: dataConfig().headerUploadFile }
         );
 
         const att = response.data?.attach?.[0]?.ATT;
 
         if (response.status === 200 && att) {
-          const selectedImageRes = `${dataConfig.httpViewFile}/NEW_NAC/${att}.jpg`;
+          const selectedImageRes = `/NEW_NAC/${att}.jpg`;
 
           const list = [...rows];
           const listOriginalRows = [...originalRows];
@@ -130,10 +130,10 @@ const ImageCell = ({ imagePath, name, rows, setRows, index, fieldData, originalR
           };
 
           try {
-            const responseUpload = await Axios.post(
-              `${dataConfig.http}/UpdateDtlAsset`,
+            const responseUpload = await client.post(
+              `/UpdateDtlAsset`,
               payload,
-              dataConfig.headers
+              { headers: dataConfig().header}
             );
 
             if (responseUpload.status === 200) {

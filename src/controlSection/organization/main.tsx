@@ -3,8 +3,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import { Autocomplete, Avatar, CardHeader, Chip, Divider, Stack, TextField, Typography } from '@mui/material';
 import { DataUser, EmployeeNode, HierarchyData, Employee } from '../../type/nacType';
-import Axios from 'axios';
-import { dataConfig } from '../../config';
+import dataConfig from '../../config';
 import { styled, alpha } from '@mui/material/styles';
 import CheckIcon from '@mui/icons-material/Check';
 import IconButton from '@mui/material/IconButton';
@@ -22,6 +21,7 @@ import {
 } from '@mui/x-tree-view/useTreeItem2';
 import { useTreeItem2Utils } from '@mui/x-tree-view/hooks';
 import { TreeViewBaseItem } from '@mui/x-tree-view/models';
+import client from '../../lib/axios/interceptor';
 
 type ExtendedTreeItemProps = {
   editable?: boolean;
@@ -101,7 +101,7 @@ const LabelInput = React.forwardRef(function LabelInput(
   const fetchDataUsers = async () => {
     try {
       // ดึงข้อมูล users ทั้งหมด
-      const userResponse = await Axios.get(`${dataConfig.http}/User_List`, dataConfig.headers);
+      const userResponse = await client.get('/User_List', { headers: dataConfig().header });
       if (userResponse.status === 200) {
         setUsers(userResponse.data);
       }
@@ -313,7 +313,7 @@ export default function Profile() {
   const fetchDataUsers = async () => {
     try {
       // ดึงข้อมูล users ทั้งหมด
-      const userResponse = await Axios.get(`${dataConfig.http}/User_List`, dataConfig.headers);
+      const userResponse = await client.get('/User_List', { headers: dataConfig().header });
       if (userResponse.status === 200) {
         setUsers(userResponse.data);
       }
@@ -325,11 +325,11 @@ export default function Profile() {
   const fetchDataPosition = async () => {
     try {
       // ดึงข้อมูลแผนก
-      const departmentResponse = await Axios.get(`${dataConfig.http}/Organization_List`, dataConfig.headers);
+      const departmentResponse = await client.get('/Organization_List', { headers: dataConfig().header });
       if (!departmentResponse.data) return;
 
       // ดึงข้อมูลตำแหน่ง
-      const positionResponse = await Axios.get(`${dataConfig.http}/User_List_ByPosition`, dataConfig.headers);
+      const positionResponse = await client.get('/User_List_ByPosition', { headers: dataConfig().header });
       if (!positionResponse.data) return;
 
       // แปลงข้อมูลและอัปเดต state

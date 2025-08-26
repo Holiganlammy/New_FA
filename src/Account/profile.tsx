@@ -6,15 +6,15 @@ import Grid from '@mui/material/Grid2';
 import Typography from '@mui/material/Typography';
 import { Alert, alpha, AppBar, Avatar, Button, CardActions, CardHeader, Container, Divider, InputBase, List, ListItem, ListItemAvatar, ListItemText, Stack, styled, TextField, Toolbar } from '@mui/material';
 import { UserInfo, ResetPass } from '../type/nacType';
-import Axios from 'axios';
 import Swal from 'sweetalert2';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import { dataConfig } from '../config';
+import dataConfig from '../config';
 import SaveIcon from '@mui/icons-material/Save';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import client from '../lib/axios/interceptor';
 
 const ValidationTextField = styled(TextField)(({ theme }) => ({
   width: '100%', // แทน fullWidth
@@ -52,12 +52,10 @@ interface LoginResponse {
 }
 
 async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await fetch(dataConfig.http + '/login', {
-    method: 'POST',
-    headers: dataConfig.headers,
-    body: JSON.stringify(credentials)
+  const response = await client.post('/login', JSON.stringify(credentials), {
+    headers: dataConfig().header
   });
-  return response.json();
+  return response.data;
 }
 
 export default function Profile() {
@@ -90,15 +88,15 @@ export default function Profile() {
         formData_1.append("fileName", file.name);
 
         try {
-          const response = await Axios.post(
-            `${dataConfig.http}/check_files_NewNAC`,
+          const response = await client.post(
+            '/check_files_NewNAC',
             formData_1,
-            dataConfig.headerUploadFile
+            { headers: dataConfig().headerUploadFile }
           );
 
           if (response.status === 200) {
             const list = [...userInfo];
-            list[0].img_profile = `${dataConfig.httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            list[0].img_profile = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
             setUserInfo(list);
           }
         } catch (error) {
@@ -120,10 +118,10 @@ export default function Profile() {
       })
     } else {
       try {
-        const res = await Axios.post(
-          dataConfig.http + '/User_UpdateUserInfo', userInfo && userInfo[0] || parsedData,
-          dataConfig.headers
-        );
+        const res = await client.post(
+          '/User_UpdateUserInfo', userInfo && userInfo[0] || parsedData,{ 
+            headers: dataConfig().header
+          });
         if (res.status === 200) {
           localStorage.setItem('data', JSON.stringify(res.data[0]));
           setUserInfo(res.data)
@@ -140,10 +138,10 @@ export default function Profile() {
       Password: resetPass[0].current_password || '',
     });
     if ('token' in response) {
-      const resChangePass = await Axios.post(
-        dataConfig.http + '/User_ResetPassword',
+      const resChangePass = await client.post(
+        '/User_ResetPassword',
         { loginname: parsedData.UserCode, newpassword: resetPass[0].new_password || '' },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
       if (resChangePass.status === 200) {
         setResetPass([{

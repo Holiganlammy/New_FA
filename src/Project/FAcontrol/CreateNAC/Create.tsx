@@ -5,8 +5,7 @@ import { AppBar, Toolbar, Container, Paper, Stack, Box, Grid2, TableContainer, T
 import logoPure from '../../../image/Picture1.png'
 import { StyledTableCell, StyledTableCellHeader } from '../../../components/StyledTable'
 import { RequestCreateDocument, DataUser, DataAsset, FAControlCreateDetail, WorkflowApproval } from '../../../type/nacType';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig  from "../../../config";
 import { useLocation, useNavigate } from 'react-router-dom';
 import Loading from '../../../components/Loading';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAddOutlined';
@@ -24,6 +23,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import ArticleIcon from '@mui/icons-material/Article';
 import 'dayjs/locale/th'
+import client from '../../../lib/axios/interceptor';
 
 
 dayjs.extend(utc);
@@ -206,14 +206,14 @@ export default function Create() {
 
     const fetData = async () => {
       // แสดง users ทั้งหมด
-      await Axios.get(dataConfig.http + '/User_List', dataConfig.headers)
+      await client.get('/User_List', { headers: dataConfig().header })
         .then((res) => {
           setUsers(res.data)
         })
 
       //permission
       try {
-        await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, dataConfig.headers)
+        await client.post('/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, { headers: dataConfig().header })
           .then(response => {
             setPermission_menuID(response.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
           });
@@ -223,7 +223,7 @@ export default function Create() {
 
       // รหัสทรัพย์สินทั้งหมด
       try {
-        await Axios.post(dataConfig.http + '/AssetsAll_Control', { BranchID: parsedData.branchid }, dataConfig.headers)
+        await client.post('/AssetsAll_Control', { BranchID: parsedData.branchid }, { headers: dataConfig().header })
           .then((res) => {
             if (parsedData.branchid === 901 && parsedData.DepCode !== '101ITO') {
               setDataAssets(res.data.data.filter((datain: { Position: any; }) => datain.Position === parsedData.DepCode))
@@ -237,16 +237,16 @@ export default function Create() {
       if (idParam && nac_codeParam) {
         const dataId = parseInt(idParam);
         try {
-          await Axios.post(dataConfig.http + '/FA_control_select_headers', { nac_code: nac_codeParam }, dataConfig.headers)
+          await client.post('/FA_control_select_headers', { nac_code: nac_codeParam }, { headers: dataConfig().header })
             .then(async (res) => {
               if (res.status === 200) {
-                await Axios.post(dataConfig.http + '/FA_Control_execDocID', { usercode: parsedData.UserCode, nac_code: nac_codeParam }, dataConfig.headers)
+                await client.post('/FA_Control_execDocID', { usercode: parsedData.UserCode, nac_code: nac_codeParam }, { headers: dataConfig().header })
                   .then(resApprove => {
                     if (resApprove.status === 200) {
                       setWorkflowApproval(resApprove.data);
                     }
                   })
-                await Axios.post(dataConfig.http + '/FA_Control_select_dtl', { nac_code: nac_codeParam }, dataConfig.headers)
+                await client.post('/FA_Control_select_dtl', { nac_code: nac_codeParam }, { headers: dataConfig().header })
                   .then(resDtl => {
                     if (resDtl.status === 200) {
                       setDetailNAC(resDtl.data)

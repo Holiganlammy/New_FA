@@ -3,8 +3,7 @@ import { SqlInputParameters, Department, Branch, DataUser } from '../../../type/
 import { Stack, Typography, AppBar, Container, Toolbar, FormControl, TextField, Card, CardActions, CardContent, Grid2, Chip, Divider, Alert, FormControlLabel, FormLabel, Radio, RadioGroup, InputLabel, MenuItem, OutlinedInput, Box, Autocomplete, Checkbox, Button, InputAdornment, CssBaseline } from "@mui/material";
 import Swal from "sweetalert2";
 import DeleteIcon from '@mui/icons-material/Delete';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs, { Dayjs } from 'dayjs';
 import { LocalizationProvider, DateTimePicker, renderDigitalClockTimeView, } from '@mui/x-date-pickers';
@@ -18,6 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/th'
+import client from "../../../lib/axios/interceptor";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -28,12 +28,10 @@ const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 async function PeriodCreate(credentials: SqlInputParameters) {
-  return fetch(`${dataConfig.http}/craete_period`, {
-    method: 'POST',
-    headers: dataConfig.headers,
-    body: JSON.stringify(credentials)
-  })
-    .then(data => data.json())
+  const response = await client.post(`/craete_period`, JSON.stringify(credentials), {
+    headers: dataConfig().header,
+  });
+  return response.data;
 }
 
 export default function ListNacPage() {
@@ -66,7 +64,7 @@ export default function ListNacPage() {
     setLoading(true);
     try {
       // ส่งทุก request พร้อมกันด้วย Promise.all
-      const responses = await Axios.post(`${dataConfig.http}/craete_period`, rows[0], dataConfig.headers);
+      const responses = await client.post(`/craete_period`, rows[0], { headers: dataConfig().header });
 
       // ตรวจสอบว่าทุก response สำเร็จหรือไม่
       if (responses.status === 200) {
@@ -100,7 +98,7 @@ export default function ListNacPage() {
   React.useEffect(() => {
     const fetData = async () => {
       // Fetch users
-      await Axios.get<DataUser[]>(`${dataConfig.http}/users`, dataConfig.headers)
+      await client.get<DataUser[]>(`/users`, { headers: dataConfig().header })
         .then((res) => {
           setUsers(res.data.filter((user) => user.BranchID === 901 && user.UserType !== 'CENTER'));
           setUserCenter(res.data.filter((user) => user.BranchID === 901 && user.UserType === 'CENTER'));
@@ -110,7 +108,7 @@ export default function ListNacPage() {
         });
 
       // Fetch department list
-      await Axios.post<{ data: Department[] }>(`${dataConfig.http}/Department_List`, { branchid: parsedData.branchid }, dataConfig.headers)
+      await client.post<{ data: Department[] }>(`/Department_List`, { branchid: parsedData.branchid }, { headers: dataConfig().header })
         .then((response) => {
           const newArray = response.data.data.filter((dep) => dep.depid > 14);
           setDepartment(newArray);
@@ -120,7 +118,7 @@ export default function ListNacPage() {
         });
 
       // Fetch branch list
-      await Axios.get<{ data: Branch[] }>(`${dataConfig.http}/Branch_ListAll`, dataConfig.headers)
+      await client.get<{ data: Branch[] }>(`/Branch_ListAll`, { headers: dataConfig().header })
         .then((response) => {
           setBrnach(
             response.data.data.filter(

@@ -15,13 +15,13 @@ import Fade from '@mui/material/Fade';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { ThemeProvider, createTheme, styled, useTheme } from '@mui/material/styles';
 import NavBarMobile from './NavMain/NavbarMobile'
-import { dataConfig } from "../../config";
-import Axios from 'axios';
+import dataConfig from "../../config";
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import client from "../../lib/axios/interceptor";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialogContent-root': {
@@ -172,7 +172,7 @@ export default function RecipeReviewCard(props: Props) {
 
   const fetchPermissionB = async () => {
     try {
-      await Axios.post(dataConfig.http + '/permission_branch', { 'userCode': parsedData.UserCode }, dataConfig.headers)
+      await client.post('/permission_branch', { 'userCode': parsedData.UserCode }, { headers: dataConfig().header })
         .then((res) => {
           setPerBranch(res.data.data);
         });

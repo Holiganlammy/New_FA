@@ -6,11 +6,11 @@ import { Typography, AppBar, Container, Toolbar, Autocomplete, TextField, Box, D
 import Swal from "sweetalert2";
 import CloseIcon from '@mui/icons-material/Close';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import Grid from '@mui/material/Grid2';
+import client from "../../../lib/axios/interceptor";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -107,10 +107,10 @@ export default function ListNacPage() {
     };
     setRows(list);
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/UpdateDtlAsset`,
+      const response = await client.post(
+        `/UpdateDtlAsset`,
         rowEdit,
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
       if (response.status === 200) {
@@ -198,24 +198,24 @@ export default function ListNacPage() {
     setLoading(true)
     try {
       // Permission
-      await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, dataConfig.headers)
+      await client.post('/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, { headers: dataConfig().header })
         .then(async responsePermission => {
           setPermission_menuID(responsePermission.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
           // แสดง users ทั้งหมด
-          await Axios.get(dataConfig.http + '/User_List', dataConfig.headers)
+          await client.get('/User_List', { headers: dataConfig().header })
             .then((res) => {
               setUsers(res.data)
             })
 
-          const resFetchAssets = await Axios.get(dataConfig.http + '/FA_Control_Assets_TypeGroup', dataConfig.headers)
+          const resFetchAssets = await client.get('/FA_Control_Assets_TypeGroup', { headers: dataConfig().header })
           const resData: Assets_TypeGroup[] = resFetchAssets.data
           setAssets_TypeGroup(resData)
           setAssets_TypeGroupSelect(resData[0].typeCode)
 
-          const response = await Axios.post(
-            `${dataConfig.http}/FA_Control_Fetch_Assets`,
+          const response = await client.post(
+            `/FA_Control_Fetch_Assets`,
             { usercode: parsedData.UserCode },
-            dataConfig.headers
+            { headers: dataConfig().header }
           );
           if (response.status === 200) {
             const permis = responsePermission.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID)

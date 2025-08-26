@@ -3,8 +3,7 @@ import DataTable from "./DataTable"
 import React from "react";
 import { AssetRecord, Assets_TypeGroup, CountAssetRow } from '../../../type/nacType';
 import { Stack, Typography, AppBar, Container, Toolbar, Autocomplete, TextField, Box, ImageListItem, CardActionArea, CardContent, ImageList, Pagination, CardMedia, Tab, Tabs } from "@mui/material";
-import { dataConfig } from "../../../config";
-import Axios from 'axios';
+import dataConfig from "../../../config";
 import { Outlet, useNavigate } from "react-router";
 import dayjs from 'dayjs';
 import Grid from '@mui/material/Grid2';
@@ -12,6 +11,7 @@ import ImageCell from "./ClickOpenImg";
 import Loading from "../../../components/Loading";
 import { styled } from '@mui/material/styles';
 import MuiCard from '@mui/material/Card';
+import client from "../../../lib/axios/interceptor";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -79,18 +79,25 @@ export default function ListNacPage() {
 
   const fetchData = async () => {
     try {
-      const response = await Axios.post(
-        `${dataConfig.http}/FA_Control_Fetch_Assets`,
+      const response = await client.post(
+        `/FA_Control_Fetch_Assets`,
         { usercode: parsedData.UserCode },
-        dataConfig.headers
+        { headers: dataConfig().header }
       );
 
-      const resFetchAssets = await Axios.get(dataConfig.http + '/FA_Control_Assets_TypeGroup', dataConfig.headers)
-      const resData: Assets_TypeGroup[] = resFetchAssets.data
-      setAssets_TypeGroup(resData)
+      const resFetchAssets = await client.get(
+        `/FA_Control_Assets_TypeGroup`,
+        { headers: dataConfig().header }
+      );
+      const resData: Assets_TypeGroup[] = resFetchAssets.data;
+      setAssets_TypeGroup(resData);
       setAssets_TypeGroupSelect(resData[0].typeCode)
 
-      const permiss = await Axios.post(dataConfig.http + '/select_Permission_Menu_NAC', { Permission_TypeID: 1, userID: parsedData.userid }, dataConfig.headers)
+      const permiss = await client.post(
+        `/select_Permission_Menu_NAC`,
+        { Permission_TypeID: 1, userID: parsedData.userid },
+        { headers: dataConfig().header }
+      );
       setPermission_menuID(permiss.data.data.map((res: { Permission_MenuID: number; }) => res.Permission_MenuID))
 
       if (response.status === 200) {

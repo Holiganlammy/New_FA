@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Box from "@mui/material/Box";
-import { dataConfig } from "../../../../config";
+import dataConfig from "../../../../config";
 import { styled, createTheme } from '@mui/material/styles';
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
@@ -8,7 +8,6 @@ import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Axios from 'axios';
 import { AppBar, ImageList, ImageListItem, Stack, Toolbar, Dialog, DialogContent, Container, ThemeProvider, Tooltip, Button, DialogActions, DialogTitle, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup } from '@mui/material';
 import { Dayjs } from 'dayjs'; // Import Dayjs
 import utc from 'dayjs/plugin/utc';
@@ -23,6 +22,7 @@ import { CountAssetRow } from '../../../../type/nacType';
 import Swal from 'sweetalert2';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { BrowserQRCodeReader } from '@zxing/browser';
+import client from '../../../../lib/axios/interceptor';
 
 const convertToJPG = (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -126,10 +126,10 @@ export default function ScanVerifly() {
   const fechData = async () => {
     try {
       if (dataLocation?.Code) {
-        const resCheck = await Axios.post(dataConfig.http + '/check_code_result', { 'Code': dataLocation?.Code }, dataConfig.headers)
+        const resCheck = await client.post('/check_code_result', { 'Code': dataLocation?.Code }, { headers: dataConfig().header })
         if (resCheck.status === 200) {
           if (resCheck.data.data.length > 0) {
-            await Axios.post(dataConfig.http + '/addAsset',
+            await client.post('/addAsset',
               {
                 "Name": resCheck.data.data[0]['Name'],
                 "Code": resCheck.data.data[0]["Code"],
@@ -141,7 +141,7 @@ export default function ScanVerifly() {
                 "RoundID": dataLocation?.PeriodID,
                 "UserID": parsedData?.userid,
               },
-              dataConfig.headers).then((resAdd) => {
+              { headers: dataConfig().header }).then((resAdd) => {
                 if (resAdd.status === 200) {
                   setQrData((prev) => ({
                     ...prev,
@@ -196,8 +196,8 @@ export default function ScanVerifly() {
   };
 
   const updateReferent = async (value: string) => {
-    const response = await Axios.post(
-      `${dataConfig.http}/updateReference`,
+    const response = await client.post(
+      `/updateReference`,
       {
         "Reference": value,
         "Code": qrData.Code,
@@ -206,7 +206,7 @@ export default function ScanVerifly() {
         "BranchID": qrData.BranchID,
         "Date": dayjs(Date.now()),
       },
-      dataConfig.headers
+      { headers: dataConfig().header }
     );
     if (response.status === 200) {
       setQrData((prev) => ({ ...prev, Reference: value }))
@@ -248,17 +248,17 @@ export default function ScanVerifly() {
         formData_1.append("file", file);
         formData_1.append("fileName", file.name);
 
-        const response = await Axios.post(
-          `${dataConfig.http}/check_files_NewNAC`,
+        const response = await client.post(
+          `/check_files_NewNAC`,
           formData_1,
-          dataConfig.headerUploadFile
+          { headers: dataConfig().headerUploadFile }
         );
 
         const attachData = response.data?.attach?.[0]?.ATT;
         console.log("Upload response:", response);
         console.log("Image:", attachData);
         if (response.status === 200 && attachData) {
-          const selectedImageRes = `${dataConfig.httpViewFile}/NEW_NAC/${attachData}.jpg`;
+          const selectedImageRes = `${dataConfig().httpViewFile}/NEW_NAC/${attachData}.jpg`;
 
           const payload = {
             Code: qrData?.Code ?? '',
@@ -268,10 +268,10 @@ export default function ScanVerifly() {
           };
 
           try {
-            const uploadRes = await Axios.post(
-              `${dataConfig.http}/FA_Mobile_UploadImage`,
+            const uploadRes = await client.post(
+              `/FA_Mobile_UploadImage`,
               payload,
-              dataConfig.headers
+              { headers: dataConfig().header }
             );
             if (uploadRes.status === 200) {
               setQrData((prev) => ({
