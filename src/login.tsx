@@ -31,14 +31,27 @@ interface LoginResponse {
   data: Array<{ userid: string, changepassword: boolean }>;
   expirepassword?: boolean;
   request_reset_token?: string;
+  Actived?: boolean;
 }
 
 // เพื่อใช้ทดสอบ
 async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
-  const response = await client.post('/login', JSON.stringify(credentials), {
-    headers: dataConfig().header,
+  const config = dataConfig();
+  const headers: Record<string, string> = {};
+  
+  // Only add headers with non-null values
+  Object.entries(config.header).forEach(([key, value]) => {
+    if (value !== null) {
+      headers[key] = value;
+    }
   });
-  return response.data;
+  
+  const response = await fetch(config.http + '/login', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(credentials)
+  });
+  return response.json();
 }
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -138,7 +151,16 @@ export default function SignInSide() {
       UserCode,
       Password
     });
-    if (deviceType === 'desktop') {
+    // if (deviceType === 'desktop') {
+      if (response.Actived === false) {
+        Swal.fire({
+          icon: "error",
+          title: "User นี้ยังไม่ได้รับการอนุมัติการใช้งาน กรุณาติดต่อผู้ดูแลระบบ",
+          showConfirmButton: false,
+          timer: 1500
+        })
+        return;
+      }
       if (response.expirepassword === true || response.changepassword === false) {
         localStorage.setItem('Request_ResetPassword', JSON.stringify({
           userId: response.data[0].userid,
@@ -177,39 +199,39 @@ export default function SignInSide() {
           timer: 1500
         })
       }
-    } else {
-      if (response.expirepassword === true || response.changepassword === false) {
-        localStorage.setItem('Request_ResetPassword', JSON.stringify({
-          userId: response.data[0].userid,
-          reset_password_token: response.request_reset_token
-        }));
-        localStorage.setItem('changepassword', String(response.changepassword));
+    // } else {
+    //   if (response.expirepassword === true || response.changepassword === false) {
+    //     localStorage.setItem('Request_ResetPassword', JSON.stringify({
+    //       userId: response.data[0].userid,
+    //       reset_password_token: response.request_reset_token
+    //     }));
+    //     localStorage.setItem('changepassword', String(response.changepassword));
         
-        setShouldRedirectToReset(true);
-        return;
-      }
-      if (response.token) {
-        const body = { Permission_TypeID: 1, userID: response.data[0].userid };
-        await client.post('/select_Permission_Menu_NAC', body, {
-          headers: dataConfig().header
-        })
-          .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
-            localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
-          });
+    //     setShouldRedirectToReset(true);
+    //     return;
+    //   }
+    //   if (response.token) {
+    //     const body = { Permission_TypeID: 1, userID: response.data[0].userid };
+    //     await client.post('/select_Permission_Menu_NAC', body, {
+    //       headers: dataConfig().header
+    //     })
+    //       .then((response: { data: { data: { Permission_MenuID: string }[] } }) => {
+    //         localStorage.setItem('permission_MenuID', JSON.stringify(response.data.data.map((res) => res.Permission_MenuID)));
+    //       });
 
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('data', JSON.stringify(response.data[0]));
-        localStorage.setItem('date_login', datenow);
-        navigate('/MobileHome')
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "UserCode หรือ Password ไม่ถูกต้อง",
-          showConfirmButton: false,
-          timer: 1500
-        })
-      }
-    }
+    //     localStorage.setItem('token', response.token);
+    //     localStorage.setItem('data', JSON.stringify(response.data[0]));
+    //     localStorage.setItem('date_login', datenow);
+    //     navigate('/MobileHome')
+    //   } else {
+    //     Swal.fire({
+    //       icon: "error",
+    //       title: "UserCode หรือ Password ไม่ถูกต้อง",
+    //       showConfirmButton: false,
+    //       timer: 1500
+    //     })
+    //   }
+    // }
   };
   React.useEffect(() => {
     if (shouldRedirectToReset) {

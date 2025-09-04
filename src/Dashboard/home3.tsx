@@ -81,12 +81,12 @@ const transformDataForBarChart = (data: Record<number, Record<number, number>>) 
 };
 
 const size = {
-  width: 400,
+  width: 300,
   height: 200,
 };
 
 const chartSetting = {
-  width: 1500,
+  width: 1200,
   height: 350,
   sx: {
     [`.${axisClasses.left} .${axisClasses.label}`]: {
@@ -328,11 +328,45 @@ const MenuAppBar: React.FC = () => {
   }, [parsedData.UserCode, targetYear]);
 
   const columns: GridColDef[] = [
-    { field: 'source_dep_owner', headerName: 'Department', width: 300, align: 'center', headerAlign: 'center', },
-    { field: 'add_nac', headerName: 'เพิ่มทรัพย์สิน', flex: 1, align: 'right', headerAlign: 'center', },
-    { field: 'tranfer_nac', headerName: 'โยกย้ายทรัพย์สิน', flex: 1, align: 'right', headerAlign: 'center', },
-    { field: 'delete_nac', headerName: 'ตัดบัญชีทรัพย์สิน', flex: 1, align: 'right', headerAlign: 'center', },
-    { field: 'sell_nac', headerName: 'ขายทรัพย์สิน', flex: 1, align: 'right', headerAlign: 'center', },
+    { 
+      field: 'source_dep_owner', 
+      headerName: 'Department', 
+      width: window.innerWidth > 768 ? 300 : 150, 
+      align: 'center', 
+      headerAlign: 'center', 
+    },
+    { 
+      field: 'add_nac', 
+      headerName: 'เพิ่มทรัพย์สิน', 
+      flex: 1, 
+      align: 'right', 
+      headerAlign: 'center',
+      minWidth: 120,
+    },
+    { 
+      field: 'tranfer_nac', 
+      headerName: 'โยกย้ายทรัพย์สิน', 
+      flex: 1, 
+      align: 'right', 
+      headerAlign: 'center',
+      minWidth: 120,
+    },
+    { 
+      field: 'delete_nac', 
+      headerName: 'ตัดบัญชีทรัพย์สิน', 
+      flex: 1, 
+      align: 'right', 
+      headerAlign: 'center',
+      minWidth: 120,
+    },
+    { 
+      field: 'sell_nac', 
+      headerName: 'ขายทรัพย์สิน', 
+      flex: 1, 
+      align: 'right', 
+      headerAlign: 'center',
+      minWidth: 120,
+    },
   ];
 
   return (
@@ -365,7 +399,8 @@ const MenuAppBar: React.FC = () => {
         <Container
           component="main"
           sx={{
-            my: 2,
+            my: { xs: 1, md: 2 },
+            px: { xs: 1, md: 3 },
             backgroundImage:
               'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
           }}
@@ -374,59 +409,59 @@ const MenuAppBar: React.FC = () => {
           <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }} >
             <Grid size={{ xs: 12 }}>
               <Grid container spacing={{ xs: 1, md: 2 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 4, sm: 2, md: 3 }}>
                   <Card
                     variant="outlined"
                     sx={{ backgroundImage: `linear-gradient(to bottom, #99E1D9, #F0F7F4)` }}
                   >
-                    <CardContent>
-                      <Typography variant="body1" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                    <CardContent sx={{ padding: { xs: 1, md: 2 } }}>
+                      <Typography variant="body2" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                         เพิ่มทรัพย์สิน
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>+{sumData(transformedData).Add} Items</Typography>
-                      <Typography variant="subtitle2" color="success">{((sumData(transformedData).Add / (countAllAsset - sumData(transformedData).Add)) * 100).toFixed(2)}% Since last year</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1rem' } }}>+{sumData(transformedData).Add} Items</Typography>
+                      <Typography variant="subtitle2" color="success" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>{((sumData(transformedData).Add / (countAllAsset - sumData(transformedData).Add)) * 100).toFixed(2)}% Since last year</Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 4, sm: 2, md: 3 }}>
                   <Card
                     variant="outlined"
                     sx={{ backgroundImage: `linear-gradient(to bottom, #FFA5AB, #F0F7F4)` }}
                   >
-                    <CardContent>
-                      <Typography variant="body1" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                    <CardContent sx={{ padding: { xs: 1, md: 2 } }}>
+                      <Typography variant="body2" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                         ขายทรัพย์สิน
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>-{sumData(transformedData).Sell} Items</Typography>
-                      <Typography variant="subtitle2" color="error">{((sumData(transformedData).Sell / (sumData(transformedData).Sell + countAllAsset)) * 100).toFixed(2)}% Since last year</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1rem' } }}>-{sumData(transformedData).Sell} Items</Typography>
+                      <Typography variant="subtitle2" color="error" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>{((sumData(transformedData).Sell / (sumData(transformedData).Sell + countAllAsset)) * 100).toFixed(2)}% Since last year</Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 4, sm: 2, md: 3 }}>
                   <Card
                     variant="outlined"
                     sx={{ backgroundImage: `linear-gradient(to bottom, #D7B8F3, #F0F7F4)` }}
                   >
-                    <CardContent>
-                      <Typography variant="body1" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                    <CardContent sx={{ padding: { xs: 1, md: 2 } }}>
+                      <Typography variant="body2" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                         ตัดบัญชีทรัพย์สิน
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>-{sumData(transformedData).Delete} Items</Typography>
-                      <Typography variant="subtitle2" color="error">{((sumData(transformedData).Delete / (sumData(transformedData).Delete + countAllAsset)) * 100).toFixed(2)}% Since last year</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1rem' } }}>-{sumData(transformedData).Delete} Items</Typography>
+                      <Typography variant="subtitle2" color="error" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>{((sumData(transformedData).Delete / (sumData(transformedData).Delete + countAllAsset)) * 100).toFixed(2)}% Since last year</Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 4, sm: 2, md: 3 }}>
                   <Card
                     variant="outlined"
                     sx={{ backgroundImage: `linear-gradient(to bottom, #8DE4FF, #F0F7F4)` }}
                   >
-                    <CardContent>
-                      <Typography variant="body1" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                    <CardContent sx={{ padding: { xs: 1, md: 2 } }}>
+                      <Typography variant="body2" gutterBottom sx={{ color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
                         โยกย้ายทรัพย์สิน
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>{sumData(transformedData).Transfer} Items</Typography>
-                      <Typography variant="subtitle2" color="success">{((sumData(transformedData).Transfer / countAllAsset) * 100).toFixed(2)}% Since last year</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1rem' } }}>{sumData(transformedData).Transfer} Items</Typography>
+                      <Typography variant="subtitle2" color="success" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>{((sumData(transformedData).Transfer / countAllAsset) * 100).toFixed(2)}% Since last year</Typography>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -435,7 +470,7 @@ const MenuAppBar: React.FC = () => {
             <Grid size={{ xs: 12 }}>
               <Grid container spacing={{ xs: 1, md: 2 }} columns={{ xs: 4, sm: 8, md: 12 }} alignItems="stretch">
                 <Grid size={{ xs: 12 }}>
-                  <Card variant="outlined" sx={{ height: 500}}>
+                  <Card variant="outlined" sx={{ height: { xs: 400, md: 500 } }}>
                     <CardHeader
                       title={
                         <ListItem
@@ -452,27 +487,27 @@ const MenuAppBar: React.FC = () => {
                                   <RefreshIcon />
                                 </IconButton>
                               </Tooltip>
-                              <Typography variant="body2" color="success"> Sync</Typography>
+                              <Typography variant="body2" color="success" sx={{ display: { xs: 'none', sm: 'block' } }}> Sync</Typography>
                             </Stack>
                           }
                         >
                           <ListItemText
                             primary={
                               <Stack
-                                direction="row"
+                                direction={{ xs: "column", sm: "row" }}
                                 spacing={2}
                                 sx={{
                                   justifyContent: "flex-start",
-                                  alignItems: "center",
+                                  alignItems: { xs: "flex-start", sm: "center" },
                                 }}
                               >
-                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.25rem' } }}>
                                   NAC Completed ({targetYear < 1000 || targetYear > 9999 ? 'xxxx' : targetYear})
                                 </Typography>
                                 <TextField
                                   id="outlined-start-adornment"
                                   size="small"
-                                  sx={{ m: 1, width: '25ch' }}
+                                  sx={{ m: 1, width: { xs: '20ch', md: '25ch' } }}
                                   value={targetYear === 0 ? '' : targetYear}
                                   onChange={(e) => {
                                     const string_data = Number(e.target.value)
@@ -505,7 +540,8 @@ const MenuAppBar: React.FC = () => {
                       sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        alignItems: 'flex-end', // Centers vertically
+                        alignItems: 'flex-end',
+                        overflow: 'auto'
                       }}
                     >
                       <LineChart
@@ -525,18 +561,20 @@ const MenuAppBar: React.FC = () => {
                             itemMarkWidth: 10,
                             itemMarkHeight: 10,
                             markGap: 5,
-                            itemGap: 20,
+                            itemGap: window.innerWidth > 768 ? 20 : 10,
                             padding: 0,
                           },
                         }}
-                        {...chartSetting}
+                        width={window.innerWidth > 768 ? chartSetting.width : window.innerWidth - 40}
+                        height={chartSetting.height}
+                        sx={chartSetting.sx}
                       />
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 7 }}>
+                <Grid size={{ xs: 12, md: 7 }}>
                   <Card variant="outlined" sx={{ height: '100%'}}>
-                    <Typography variant="h6" sx={{ p: 1, fontWeight: 'bold' }}>
+                    <Typography variant="h6" sx={{ p: 1, fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.25rem' } }}>
                       รายงานสรุป NAC คงค้าง
                     </Typography>
                     <DataTable
@@ -549,12 +587,12 @@ const MenuAppBar: React.FC = () => {
                     />
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 5 }}>
+                <Grid size={{ xs: 12, md: 5 }}>
                   <Card variant="outlined" sx={{ height: '100%'}}>
                     <CardHeader
                       title={
                         <Box>
-                          <Typography variant="body1" gutterBottom sx={{ fontWeight: 600, pb: 1 }}>
+                          <Typography variant="body1" gutterBottom sx={{ fontWeight: 600, pb: 1, fontSize: { xs: '0.875rem', md: '1rem' } }}>
                             ผลสรุปการตรวจนับ
                           </Typography>
                           <Autocomplete
@@ -583,14 +621,15 @@ const MenuAppBar: React.FC = () => {
                         series={[
                           {
                             data: chartData,
-                            innerRadius: 75,
-                            outerRadius: 100,
+                            innerRadius: window.innerWidth > 768 ? 75 : 50,
+                            outerRadius: window.innerWidth > 768 ? 100 : 75,
                             paddingAngle: 0,
                             highlightScope: { faded: 'global', highlighted: 'item' },
                           },
                         ]}
-                        {...size}
-                        margin={{ left: 100 }}
+                        width={window.innerWidth > 768 ? size.width : 250}
+                        height={size.height}
+                        margin={{ left: window.innerWidth > 768 ? 100 : 50 }}
                         slotProps={{
                           legend: { hidden: true },
                         }}
@@ -610,7 +649,7 @@ const MenuAppBar: React.FC = () => {
                               }}
                             >
                               <SquareIcon sx={{ color: item.color }} />
-                              <Typography variant="caption">
+                              <Typography variant="caption" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
                                 {item.label}: {item.value}
                               </Typography>
                             </Stack>
