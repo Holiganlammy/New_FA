@@ -58,15 +58,21 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
     return FieldsCode;
   };
 
-  const validateFields = (doc: RequestCreateDocument) => {
-    // Check if any of the required fields are missing
+const validateFields = (doc: RequestCreateDocument) => {
     const missingFields = [];
     if (!doc.source_usercode) missingFields.push('ผู้ส่งมอบ');
     if (!doc.sourceFristName) missingFields.push('ชื่อผู้ส่งมอบ');
     if (!doc.sourceLastName) missingFields.push('นามสกุลผู้ส่งมอบ');
     if (!doc.des_usercode && [1, 2].includes(idSection ?? 0)) missingFields.push('ผู้รับมอบ');
+
+    // // เพิ่มการตรวจสอบ real_price สำหรับสถานะ 12
+    // if ([12].includes(doc.nac_status ?? 0) && 
+    //     (doc.real_price === null || doc.real_price === undefined)) {
+    //   missingFields.push('ราคาขายจริงและวันที่ได้รับเงิน');
+    // }
+
     return missingFields;
-  };
+};
 
   // ฟังก์ชันแยกสำหรับ update asset 
   const updateAssetOwnership = async (nac_code: string) => {
@@ -279,6 +285,20 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
           await submitDoc()
         } else if ([12].includes(createDoc[0].nac_status ?? 0)) {
           //กรอกราคาขาย -> รอบัญชี หรือ ปิดรายการ
+          
+          // เพิ่ม validation สำหรับ real_price เฉพาะเมื่อสถานะเป็น 12 แล้ว
+          if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) {
+            setOpenBackdrop(false);
+            setHideBT(false);
+            Swal.fire({
+              icon: "warning",
+              title: `กรุณาระบุราคาขายจริงและวันที่ได้รับเงิน`,
+              showConfirmButton: false,
+              timer: 3000
+            });
+            return;
+          }
+          
           const totalPriceSeals = detailNAC.reduce((sum, item) => {
             return item.nacdtl_PriceSeals ? sum + item.nacdtl_PriceSeals : sum;
           }, 0);
@@ -293,12 +313,20 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
           } else if (realPrice < totalPriceSeals) {
             header[0].nac_status = 3;
           } else {
-            header[0].nac_status = 15;
+            header[0].nac_status = 15; // รอบัญชีตรวจสอบ (ขายทรัพย์สิน)
           }
           setCreateDoc(header)
           await submitDoc()
-        } else if ([15, 5].includes(createDoc[0].nac_status ?? 0)) {
-          //รอบัญชี -> การเงิน
+          } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
+          //รอบัญชีตรวจสอบ (ตัดทรัพย์สิน) -> ปิดรายการ
+          const header = [...createDoc]
+          header[0].account_aprrove_id = parseInt(parsedData.userid)
+          header[0].account_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
+          header[0].nac_status = 6
+          setCreateDoc(header)
+          await submitDoc(true) // ส่ง flag ให้ update assets
+        } else if ([15].includes(createDoc[0].nac_status ?? 0)) {
+          //บัญชีตรวจสอบ (ขายทรัพย์สิน) -> การเงิน
           const header = [...createDoc]
           header[0].account_aprrove_id = parseInt(parsedData.userid)
           header[0].account_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")

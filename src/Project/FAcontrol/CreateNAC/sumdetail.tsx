@@ -172,6 +172,9 @@ export default function SumDetail({ detailNAC, dataAssets, idSection, createDoc,
             <TextField
               name="numberformat"
               id="formatted-numberformat-input"
+              required={[12].includes(createDoc[0].nac_status ?? 0)}
+              error={[12].includes(createDoc[0].nac_status ?? 0) && 
+                    (createDoc[0].real_price === null || createDoc[0].real_price === undefined)}
               value={(typeof createDoc[0].real_price === 'number') ? createDoc[0].real_price : ""}
               slotProps={{
                 input: {
