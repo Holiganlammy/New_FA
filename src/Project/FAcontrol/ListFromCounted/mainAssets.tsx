@@ -29,12 +29,14 @@ export default function ListNacPage() {
 
   const [openImage, setOpenImage] = React.useState(false);
   const [imageSrc, setImageSrc] = React.useState<string | null | undefined>('');
+  const [currentImageType, setCurrentImageType] = React.useState<'ImagePath' | 'ImagePath_2'>('ImagePath'); // เพิ่มสำหรับระบุว่าแก้ไข image ไหน
   const [assets_TypeGroup, setAssets_TypeGroup] = React.useState<Assets_TypeGroup[]>([]);
   const [assets_TypeGroupSelect, setAssets_TypeGroupSelect] = React.useState<string | null>(null);
   const [permission_menuID, setPermission_menuID] = React.useState<number[]>([]);
 
-  const handleImageClick = (src: string | null | undefined) => {
+  const handleImageClick = (src: string | null | undefined, imageType: 'ImagePath' | 'ImagePath_2') => {
     setImageSrc(src);
+    setCurrentImageType(imageType); // เก็บประเภทของ image ที่กำลังดู
     setOpenImage(true);
   };
 
@@ -100,6 +102,7 @@ export default function ListNacPage() {
         image_1: row.ImagePath,
         image_2: row.ImagePath_2,
         userid: parsedData.userid,
+        UserBranch: parsedData.branchid
       }, { headers: dataConfig().header })
         .then(async res => {
           if (res.status === 200) {
@@ -124,68 +127,8 @@ export default function ListNacPage() {
         <Select
           value={currentValue}
           onChange={handleChange}
-          native autoFocus
-        >
-          {statusAll.map(res => (
-            <option key={res} value={res}>
-              {!res ? 'none' : res}
-            </option>
-          ))}
-        </Select>
-      </FormControl>
-    );
-  }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const renderSelectEditInputCellDetail: GridColDef['renderCell'] = (params: GridRenderCellParams) => {
-    return <SelectEditInputCellDetail {...params} />;
-  };
-
-  function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
-    const { id, value, field, row } = props;
-    const statusAll = ['ตรวจนับแล้ว', 'ยังไม่ได้ตรวจนับ', 'ต่างสาขา']
-    let currentValue = value;
-    const apiRef = useGridApiContext();
-
-    const handleChange = async (event: SelectChangeEvent) => {
-      const status: string = event.target.value;
-      const statusName: string = status ? statusAll.find(res => res === status) : currentValue;
-      await client.post(`/FA_Control_UpdateDetailCounted`, {
-        roundid: optionDct && optionDctString
-          ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
-          : 0,
-        code: row.Code,
-        status: statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
-        comment: row.comment,
-        reference: row.reference,
-        image_1: row.ImagePath,
-        image_2: row.ImagePath_2,
-        userid: parsedData.userid,
-      }, { headers: dataConfig().header })
-        .then(async res => {
-          if (res.status === 200) {
-            await apiRef.current.setEditCellValue({ id, field, value: statusName });
-            setRows((prevRows) =>
-              prevRows.map((prevRow) =>
-                prevRow.Code === row.Code ? { ...prevRow, remarker: statusName } : prevRow
-              )
-            );
-            setOriginalRows((prevRows) =>
-              prevRows.map((prevRow) =>
-                prevRow.Code === row.Code ? { ...prevRow, remarker: statusName } : prevRow
-              )
-            );
-            apiRef.current.stopCellEditMode({ id, field });
-          }
-        })
-    };
-
-    return (
-      <FormControl sx={{ m: 1, maxHeight: 50 }} size="small">
-        <Select
-          value={currentValue}
-          onChange={handleChange}
-          native autoFocus
+          native 
+          autoFocus
         >
           {statusAll.map(res => (
             <option key={res} value={res}>
@@ -196,6 +139,119 @@ export default function ListNacPage() {
       </FormControl>
     );
   }
+  // Function สำหรับคำนวณ remarker status เหมือนกับ ufn_FA_Control_res_status
+  const calculateRemarkerStatus = (
+    status: boolean | number,
+    userBranch: number | null,
+    branchID: number | null,
+    ownerID: string | null,
+    userID: number | null,
+    userCode: string
+  ): string => {
+    const statusBool = status === 1 || status === true;
+    
+    // ตรวจนับแล้ว: status = 1 และ conditions ตามใดตามหนึ่ง
+    if (
+      (statusBool && userBranch === branchID && ownerID === userCode && userID !== null) ||
+      (statusBool && userBranch === branchID && ownerID === null && userID !== null) ||
+      (statusBool && userBranch === null && branchID === null && userID === null)
+    ) {
+      return 'ตรวจนับแล้ว';
+    }
+    // ต่างสาขา: status = 1 และ OwnerID ≠ UserID และ UserID ไม่ null
+    else if (statusBool && ownerID !== userCode && userID !== null) {
+      return 'ต่างสาขา';
+    }
+    // ยังไม่ได้ตรวจนับ: status = 0
+    else if (!statusBool) {
+      return 'ยังไม่ได้ตรวจนับ';
+    }
+    
+    return 'ยังไม่ได้ตรวจนับ'; // default
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const renderSelectEditInputCellDetail: GridColDef['renderCell'] = (params: GridRenderCellParams) => {
+    return <SelectEditInputCellDetail {...params} />;
+  };
+
+function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
+  const { id, value, field, row } = props;
+  const statusAll = ['ตรวจนับแล้ว', 'ยังไม่ได้ตรวจนับ', 'ต่างสาขา']
+  let currentValue = value;
+  const apiRef = useGridApiContext();
+
+  const handleChange = async (event: SelectChangeEvent) => {
+    const status: string = event.target.value;
+    const statusName: string = status ? statusAll.find(res => res === status) || status : currentValue;
+    
+    try {
+      const response = await client.post(`/FA_Control_UpdateDetailCounted`, {
+        roundid: optionDct && optionDctString
+          ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
+          : 0,
+        code: row.Code,
+        status: statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
+        comment: row.comment,
+        reference: row.Reference,
+        image_1: row.ImagePath,
+        image_2: row.ImagePath_2,
+        userid: parsedData.userid,
+        UserBranch: parsedData.branchid
+      }, { headers: dataConfig().header });
+      
+      if (response.status === 200) {
+        await apiRef.current.setEditCellValue({ id, field, value: statusName });
+        
+        // คำนวณ remarker ใหม่
+        const newStatus = statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1;
+        const calculatedRemarker = calculateRemarkerStatus(
+          newStatus,
+          row.UserBranch,
+          row.BranchID,
+          row.OwnerID,
+          parsedData.userid,
+          parsedData.UserCode
+        );
+        
+        // อัปเดตข้อมูลใน state
+        const updateRowData = (prevRows: CountAssetRow[]) =>
+          prevRows.map((prevRow) =>
+            prevRow.Code === row.Code ? { 
+              ...prevRow, 
+              remarker: calculatedRemarker, // ใช้ค่าที่คำนวณใหม่
+              Date: dayjs(),
+              UserID: parsedData.UserCode,
+              Status: newStatus
+            } : prevRow
+          );
+        
+        setRows(updateRowData(rows));
+        setOriginalRows(updateRowData(originalRows));
+        
+        apiRef.current.stopCellEditMode({ id, field });
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
+  return (
+    <FormControl sx={{ m: 1, maxHeight: 50 }} size="small">
+      <Select
+        value={currentValue}
+        onChange={handleChange}
+        native 
+        autoFocus
+      >
+        {statusAll.map(res => (
+          <option key={res} value={res}>
+            {res}
+          </option>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const renderSelectEditInputCell: GridColDef['renderCell'] = (params: GridRenderCellParams) => {
@@ -216,34 +272,39 @@ export default function ListNacPage() {
 
     const handleBlurEndEdit = async () => {
       try {
-        await client.post(`/FA_Control_UpdateDetailCounted`, {
+        const response = await client.post(`/FA_Control_UpdateDetailCounted`, {
           roundid: optionDct && optionDctString
             ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
             : 0,
           code: row.Code,
           status: row.remarker === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
           comment: currentValue,
-          reference: row.reference,
+          reference: row.Reference,
           image_1: row.ImagePath,
           image_2: row.ImagePath_2,
           userid: parsedData.userid,
-        }, { headers: dataConfig().header })
-          .then(async res => {
-            if (res.status === 200) {
-              await apiRef.current.setEditCellValue({ id, field, value: currentValue });
-              setRows((prevRows) =>
-                prevRows.map((prevRow) =>
-                  prevRow.Code === row.Code ? { ...prevRow, comment: currentValue } : prevRow
-                )
-              );
-              setOriginalRows((prevRows) =>
-                prevRows.map((prevRow) =>
-                  prevRow.Code === row.Code ? { ...prevRow, comment: currentValue } : prevRow
-                )
-              );
-              apiRef.current.stopCellEditMode({ id, field });
-            }
-          })
+          UserBranch: parsedData.branchid
+        }, { headers: dataConfig().header });
+        
+        if (response.status === 200) {
+          await apiRef.current.setEditCellValue({ id, field, value: currentValue });
+          
+          // อัปเดตข้อมูลใน state
+          const updateRowData = (prevRows: CountAssetRow[]) =>
+            prevRows.map((prevRow) =>
+              prevRow.Code === row.Code ? { 
+                ...prevRow, 
+                comment: currentValue,
+                Date: dayjs(), // อัปเดตวันที่เป็นปัจจุบัน
+                UserID: parsedData.UserCode // อัปเดตผู้ตรวจเป็นคนที่ล็อคอิน
+              } : prevRow
+            );
+          
+          setRows(updateRowData);
+          setOriginalRows(updateRowData);
+          
+          apiRef.current.stopCellEditMode({ id, field });
+        }
       } catch (error) {
         console.error('Error occurred while updating:', error);
       }
@@ -323,15 +384,15 @@ export default function ListNacPage() {
       cellClassName: 'actions',
       getActions: (params) => [
         <GridActionsCellItem
-          key={params.row.Code}
-          onClick={() => handleImageClick(params.row.ImagePath)}
+          key={`${params.row.Code}_img1`}
+          onClick={() => handleImageClick(params.row.ImagePath, 'ImagePath')}
           icon={<FindInPageIcon />}
           label="Image 1"
           showInMenu
         />,
         <GridActionsCellItem
-          key={params.row.Code}
-          onClick={() => handleImageClick(params.row.ImagePath_2)}
+          key={`${params.row.Code}_img2`}
+          onClick={() => handleImageClick(params.row.ImagePath_2, 'ImagePath_2')}
           icon={<FindInPageIcon />}
           label="Image 2"
           showInMenu
@@ -371,8 +432,6 @@ export default function ListNacPage() {
       setOriginalRows([]);
     }
   };
-
-
 
   React.useEffect(() => {
     setLoading(true)
@@ -430,10 +489,21 @@ export default function ListNacPage() {
           );
 
           const list = [...rows];
-          const index = rows.findIndex(res => res.ImagePath === imageSrc || res.ImagePath_2 === imageSrc);
+          // หา row ที่กำลังแก้ไข
+          const index = rows.findIndex(res => 
+            res.ImagePath === imageSrc || res.ImagePath_2 === imageSrc
+          );
+          
           if (index !== -1) {
-            const matchedKey = list[index].ImagePath === imageSrc ? 'ImagePath' : 'ImagePath_2';
-            list[index][matchedKey] = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            const newImageUrl = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
+            
+            // อัปเดตเฉพาะ image ที่เลือกไว้
+            if (currentImageType === 'ImagePath') {
+              list[index].ImagePath = newImageUrl;
+            } else {
+              list[index].ImagePath_2 = newImageUrl;
+            }
+            
             try {
               await client.post(`/FA_Control_UpdateDetailCounted`, {
                 roundid: optionDct && optionDctString
@@ -443,15 +513,16 @@ export default function ListNacPage() {
                 status: list[index].remarker === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
                 comment: list[index].comment,
                 reference: list[index].Reference,
-                image_1: list[index].ImagePath === imageSrc ? `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}` : list[index].ImagePath,
-                image_2: list[index].ImagePath === imageSrc ? list[index].ImagePath_2 : `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
+                image_1: list[index].ImagePath,
+                image_2: list[index].ImagePath_2,
                 userid: parsedData.userid,
-              }, { headers: dataConfig().header })
-                .then(() => {
-                  setRows(list);
-                  setOriginalRows(list);
-                  setImageSrc(`${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`);
-                })
+                UserBranch: parsedData.branchid
+              }, { headers: dataConfig().header });
+              
+              setRows(list);
+              setOriginalRows(list);
+              setImageSrc(newImageUrl);
+              
             } catch (e) {
               console.error(e);
             }
@@ -471,7 +542,6 @@ export default function ListNacPage() {
       }
     }
   };
-
 
   return (
     <React.Fragment>
@@ -614,6 +684,9 @@ export default function ListNacPage() {
         >
           <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
             {rows.find(res => res.ImagePath === imageSrc || res.ImagePath_2 === imageSrc)?.Code} ({rows.find(res => res.ImagePath === imageSrc || res.ImagePath_2 === imageSrc)?.Name})
+            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+              กำลังแก้ไข: {currentImageType === 'ImagePath' ? 'Image 1' : 'Image 2'}
+            </Typography>
           </DialogTitle>
           <IconButton
             aria-label="close"
@@ -653,7 +726,7 @@ export default function ListNacPage() {
                 sx={{ maxWidth: '400px' }}
                 startIcon={<CloudUploadIcon />}
               >
-                Upload files
+                Upload {currentImageType === 'ImagePath' ? 'Image 1' : 'Image 2'}
                 <input hidden type="file" name='file' accept='image/*'
                   onChange={handleUploadFile_1}
                 />
