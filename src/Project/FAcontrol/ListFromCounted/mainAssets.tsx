@@ -90,36 +90,63 @@ export default function ListNacPage() {
 
     const handleChange = async (event: SelectChangeEvent) => {
       const reference: string = event.target.value;
-      const referenceName: string = reference ? statusAll.find(res => res === reference) : currentValue;
-      await client.post(`/FA_Control_UpdateDetailCounted`, {
-        roundid: optionDct && optionDctString
-          ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
-          : 0,
-        code: row.Code,
-        status: row.remarker === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
-        comment: row.comment,
-        reference: referenceName === 'none' ? null : referenceName,
-        image_1: row.ImagePath,
-        image_2: row.ImagePath_2,
-        userid: parsedData.userid,
-        UserBranch: parsedData.branchid
-      }, { headers: dataConfig().header })
-        .then(async res => {
-          if (res.status === 200) {
-            await apiRef.current.setEditCellValue({ id, field, value: referenceName });
-            setRows((prevRows) =>
-              prevRows.map((prevRow) =>
-                prevRow.Code === row.Code ? { ...prevRow, Reference: referenceName } : prevRow
-              )
+      const referenceName: string = reference ? statusAll.find(res => res === reference) || reference : currentValue;
+      
+      try {
+        const response = await client.post(`/FA_Control_UpdateDetailCounted`, {
+          roundid: optionDct && optionDctString
+            ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
+            : 0,
+          code: row.Code,
+          status: row.remarker === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
+          comment: row.comment,
+          reference: referenceName === 'none' ? null : referenceName,
+          image_1: row.ImagePath,
+          image_2: row.ImagePath_2,
+          userid: parsedData.userid,
+          UserBranch: parsedData.branchid
+        }, { headers: dataConfig().header });
+        
+        if (response.status === 200) {
+          await apiRef.current.setEditCellValue({ id, field, value: referenceName });
+          
+          // อัปเดตข้อมูลใน state
+          const updateRowData = (prevRows: CountAssetRow[]) =>
+            prevRows.map((prevRow) =>
+              prevRow.Code === row.Code ? { 
+                ...prevRow, 
+                Reference: referenceName === 'none' ? null : referenceName,
+                Date: dayjs(),
+                UserID: parsedData.UserCode
+              } : prevRow
             );
-            setOriginalRows((prevRows) =>
-              prevRows.map((prevRow) =>
-                prevRow.Code === row.Code ? { ...prevRow, Reference: referenceName } : prevRow
-              )
-            );
-            apiRef.current.stopCellEditMode({ id, field });
-          }
-        })
+          
+          setRows(updateRowData);
+          setOriginalRows(updateRowData);
+          
+          // แสดง popup แจ้งเตือน
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกข้อมูลสำเร็จ',
+            text: `อัปเดตสถานะครั้งนี้เป็น "${referenceName === 'none' ? 'ไม่ระบุ' : referenceName}" แล้ว`,
+            showConfirmButton: false,
+            timer: 1500
+          });
+          
+          apiRef.current.stopCellEditMode({ id, field });
+          
+          // Refresh ข้อมูล
+          await refreshTableData();
+        }
+      } catch (error) {
+        console.error('Error updating reference:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+          showConfirmButton: true
+        });
+      }
     };
 
     return (
@@ -174,85 +201,136 @@ export default function ListNacPage() {
     return <SelectEditInputCellDetail {...params} />;
   };
 
-function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
-  const { id, value, field, row } = props;
-  const statusAll = ['ตรวจนับแล้ว', 'ยังไม่ได้ตรวจนับ', 'ต่างสาขา']
-  let currentValue = value;
-  const apiRef = useGridApiContext();
+  function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
+    const { id, value, field, row } = props;
+    const statusAll = ['ตรวจนับแล้ว', 'ยังไม่ได้ตรวจนับ', 'ต่างสาขา']
+    let currentValue = value;
+    const apiRef = useGridApiContext();
 
-  const handleChange = async (event: SelectChangeEvent) => {
-    const status: string = event.target.value;
-    const statusName: string = status ? statusAll.find(res => res === status) || status : currentValue;
+    const handleChange = async (event: SelectChangeEvent) => {
+      const status: string = event.target.value;
+      const statusName: string = status ? statusAll.find(res => res === status) || status : currentValue;
+      
+      try {
+        const newStatus = statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1;
+        
+        const response = await client.post(`/FA_Control_UpdateDetailCounted`, {
+          roundid: optionDct && optionDctString
+            ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
+            : 0,
+          code: row.Code,
+          status: newStatus,
+          comment: row.comment,
+          reference: row.Reference,
+          image_1: row.ImagePath,
+          image_2: row.ImagePath_2,
+          userid: parsedData.userid,
+          UserBranch: parsedData.branchid
+        }, { headers: dataConfig().header });
+        
+        if (response.status === 200) {
+          // คำนวณ remarker ใหม่ตามเงื่อนไขที่ถูกต้อง
+          const calculatedRemarker = calculateRemarkerStatus(
+            newStatus,
+            parsedData.branchid, // ใช้ UserBranch จาก parsedData
+            row.BranchID,
+            row.OwnerID,
+            parsedData.userid,
+            parsedData.UserCode
+          );
+          
+          // อัปเดตค่าใน DataGrid
+          await apiRef.current.setEditCellValue({ id, field, value: calculatedRemarker });
+          
+          // อัปเดตข้อมูลใน state
+          const updateRowData = (prevRows: CountAssetRow[]) =>
+            prevRows.map((prevRow) =>
+              prevRow.Code === row.Code ? { 
+                ...prevRow, 
+                remarker: calculatedRemarker, // ใช้ค่าที่คำนวณใหม่
+                Date: dayjs(),
+                UserID: parsedData.UserCode,
+                Status: newStatus
+              } : prevRow
+            );
+          
+          setRows(updateRowData);
+          setOriginalRows(updateRowData);
+          
+          // แสดง popup แจ้งเตือน
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกข้อมูลสำเร็จ',
+            text: `อัปเดตสถานะเป็น "${calculatedRemarker}" แล้ว`,
+            showConfirmButton: false,
+            timer: 1500
+          });
+          
+          // หยุดการแก้ไข
+          apiRef.current.stopCellEditMode({ id, field });
+          
+          // Refresh ข้อมูลจาก API เพื่อให้แน่ใจว่าข้อมูลเป็นปัจจุบัน
+          await refreshTableData();
+          
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+          showConfirmButton: true
+        });
+      }
+    };
+
+    return (
+      <FormControl sx={{ m: 1, maxHeight: 50 }} size="small">
+        <Select
+          value={currentValue}
+          onChange={handleChange}
+          native 
+          autoFocus
+        >
+          {statusAll.map(res => (
+            <option key={res} value={res}>
+              {res}
+            </option>
+          ))}
+        </Select>
+      </FormControl>
+    );
+  }
+  const refreshTableData = async () => {
+    if (!optionDctString) return;
     
     try {
-      const response = await client.post(`/FA_Control_UpdateDetailCounted`, {
-        roundid: optionDct && optionDctString
-          ? optionDct.find(res => res.Description === optionDctString)?.PeriodID ?? 0
-          : 0,
-        code: row.Code,
-        status: statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1,
-        comment: row.comment,
-        reference: row.Reference,
-        image_1: row.ImagePath,
-        image_2: row.ImagePath_2,
-        userid: parsedData.userid,
-        UserBranch: parsedData.branchid
-      }, { headers: dataConfig().header });
-      
-      if (response.status === 200) {
-        await apiRef.current.setEditCellValue({ id, field, value: statusName });
+      const resData = await client.post(
+        `/FA_Control_Report_All_Counted_by_Description`,
+        { Description: optionDctString },
+        { headers: dataConfig().header }
+      );
+
+      if (resData.status === 200) {
+        setOriginalRows(resData.data);
         
-        // คำนวณ remarker ใหม่
-        const newStatus = statusName === 'ยังไม่ได้ตรวจนับ' ? 0 : 1;
-        const calculatedRemarker = calculateRemarkerStatus(
-          newStatus,
-          row.UserBranch,
-          row.BranchID,
-          row.OwnerID,
-          parsedData.userid,
-          parsedData.UserCode
+        // กรองข้อมูลตามเงื่อนไขปัจจุบัน
+        const filteredRows = resData.data.filter((res: CountAssetRow) =>
+          Object.entries(filterRows).every(([key, value]) =>
+            value === undefined || value === null || res[key as keyof CountAssetRow] === value
+          )
         );
         
-        // อัปเดตข้อมูลใน state
-        const updateRowData = (prevRows: CountAssetRow[]) =>
-          prevRows.map((prevRow) =>
-            prevRow.Code === row.Code ? { 
-              ...prevRow, 
-              remarker: calculatedRemarker, // ใช้ค่าที่คำนวณใหม่
-              Date: dayjs(),
-              UserID: parsedData.UserCode,
-              Status: newStatus
-            } : prevRow
-          );
+        const filterType = permission_menuID.includes(5) 
+          ? filteredRows.filter((res: CountAssetRow) => res.typeCode === assets_TypeGroupSelect)
+          : filteredRows.filter((res: CountAssetRow) => res.typeCode === assets_TypeGroupSelect && res.OwnerID === parsedData.UserCode);
         
-        setRows(updateRowData(rows));
-        setOriginalRows(updateRowData(originalRows));
-        
-        apiRef.current.stopCellEditMode({ id, field });
+        setRows(filterType);
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Error refreshing table data:', error);
     }
   };
-
-  return (
-    <FormControl sx={{ m: 1, maxHeight: 50 }} size="small">
-      <Select
-        value={currentValue}
-        onChange={handleChange}
-        native 
-        autoFocus
-      >
-        {statusAll.map(res => (
-          <option key={res} value={res}>
-            {res}
-          </option>
-        ))}
-      </Select>
-    </FormControl>
-  );
-}
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const renderSelectEditInputCell: GridColDef['renderCell'] = (params: GridRenderCellParams) => {
     return <SelectEditInputCell {...params} />;
@@ -261,13 +339,13 @@ function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
   function EditInputCell(props: Readonly<GridRenderCellParams>) {
     const { id, value, field, row } = props;
     const case_code: string = row.case_code;
-    const [currentValue, setCurrentValue] = React.useState(value ? value.toString() : '');// สถานะสำหรับเก็บค่าแก้ไขปัจจุบัน
+    const [currentValue, setCurrentValue] = React.useState(value ? value.toString() : '');
     const apiRef = useGridApiContext();
 
     const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const text: string = event.target.value;
-      setCurrentValue(text); // อัปเดตค่าที่กำลังแก้ไขในสถานะ
-      await apiRef.current.setEditCellValue({ id, field, value: text });// อัปเดตใน DataGrid ผ่าน API
+      setCurrentValue(text);
+      await apiRef.current.setEditCellValue({ id, field, value: text });
     };
 
     const handleBlurEndEdit = async () => {
@@ -295,18 +373,36 @@ function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
               prevRow.Code === row.Code ? { 
                 ...prevRow, 
                 comment: currentValue,
-                Date: dayjs(), // อัปเดตวันที่เป็นปัจจุบัน
-                UserID: parsedData.UserCode // อัปเดตผู้ตรวจเป็นคนที่ล็อคอิน
+                Date: dayjs(),
+                UserID: parsedData.UserCode
               } : prevRow
             );
           
           setRows(updateRowData);
           setOriginalRows(updateRowData);
           
+          // แสดง popup แจ้งเตือน
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกข้อมูลสำเร็จ',
+            text: 'อัปเดตความคิดเห็นแล้ว',
+            showConfirmButton: false,
+            timer: 1500
+          });
+          
           apiRef.current.stopCellEditMode({ id, field });
+          
+          // Refresh ข้อมูล
+          await refreshTableData();
         }
       } catch (error) {
         console.error('Error occurred while updating:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+          showConfirmButton: true
+        });
       }
     }
 
@@ -321,14 +417,14 @@ function SelectEditInputCell(props: Readonly<GridRenderCellParams>) {
           onBlur={handleBlurEndEdit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              handleBlurEndEdit(); // เรียกฟังก์ชันที่คุณต้องการเมื่อกด Enter
+              handleBlurEndEdit();
             }
           }}
           multiline
-          minRows={1} // กำหนดจำนวนแถวขั้นต่ำ
+          minRows={1}
           sx={{
             '& .MuiInputBase-root': {
-              height: 'auto', // ให้ความสูงปรับตามเนื้อหา
+              height: 'auto',
             }
           }}
         />
