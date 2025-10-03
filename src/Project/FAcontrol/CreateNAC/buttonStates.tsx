@@ -37,6 +37,7 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
   const parsedPermission = permission ? JSON.parse(permission) : null;
   const checkAt = workflowApproval.find(res => (res.approverid || "") === (parsedData.UserCode || ""))
   const [hideBT, setHideBT] = React.useState<boolean>(false)
+  const [currentApprover, setCurrentApprover] = React.useState<string | null>(null);
 
   const validateFieldsAsset = (dtl: FAControlCreateDetail, nac_type: number, status: number) => {
     // Check if any of the required fields are missing
@@ -102,6 +103,47 @@ const validateFields = (doc: RequestCreateDocument) => {
       throw error;
     }
   };
+
+  const getCurrentApprover = async (nac_code: string) => {
+    try {
+      const response = await client.get('/FA_Control_Get_Current_Approver', {
+        params: { nac_code },
+        headers: dataConfig().header,
+      });
+      if (response.status === 200) {
+        return response.data;
+      } else {
+        throw new Error(response.data.message || 'ไม่พบข้อมูลผู้อนุมัติ');
+      }
+    } catch (error: any) {
+      console.error('❌ Error fetching current approver:', error);
+      throw error;
+    }
+  };
+
+  React.useEffect(() => {
+    const fetchApprover = async () => {
+      if (createDoc[0]?.nac_code) {
+        try {
+          const res = await getCurrentApprover(createDoc[0].nac_code);
+          console.log('✅ Current Approver from API:', res);
+
+          if (Array.isArray(res) && res.length > 0) {
+            setCurrentApprover(res[0].userid_approver);
+          } else if (res?.userid_approver) {
+            setCurrentApprover(res.userid_approver);
+          } else {
+            setCurrentApprover(null);
+          }
+        } catch (err) {
+          console.error('Error fetching approver:', err);
+          setCurrentApprover(null);
+        }
+      }
+    };
+    fetchApprover();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createDoc[0]?.nac_code]);
 
   const submitDoc = async (shouldUpdateAssets = false) => {
     try {
@@ -176,15 +218,34 @@ const validateFields = (doc: RequestCreateDocument) => {
 
   const checkWorkflow = async (workflowApproval: WorkflowApproval[], sumPrice: number) => {
     const textCode = validateFieldsCode(detailNAC[0])
-    const lengthLessProce: number = workflowApproval.filter(res => (res.limitamount ?? 0) < sumPrice).length
+        
+    const sortedWorkflow = workflowApproval
+      .filter(wf => wf.workflowlevel !== null && wf.workflowlevel !== undefined)
+      .sort((a, b) => (Number(a.workflowlevel) || 0) - (Number(b.workflowlevel) || 0));
+
+    // ระดับสูงสุดที่ "อนุมัติแล้ว"
+    const maxApprovedLevel = Math.max(
+      0,
+      ...sortedWorkflow
+        .filter(wf => wf.status === 1)
+        .map(wf => Number(wf.workflowlevel) || 0)
+    );
+
+    // คนปัจจุบันใน workflow (ถ้า user นี้เป็นผู้อนุมัติขั้นนี้จริง)
+    const currentActor = sortedWorkflow.find(wf => (wf.approverid || "") === (parsedData.UserCode || ""));
+
+    // baseline = ถ้ามี currentActor (และเขายังไม่อนุมัติ) ให้ใช่ level ของเขา
+    //           ไม่งั้นใช้ maxApprovedLevel
+    const baselineLevel = currentActor
+      ? (Number(currentActor.workflowlevel) || 0)
+      : maxApprovedLevel;
+
+    // คนถัดไปจริง ๆ คือต้อง "ระดับมากกว่า baseline เท่านั้น" และยัง pending
+    const nextApprover = sortedWorkflow
+      .filter(wf => wf.status === 0 && (Number(wf.workflowlevel) || 0) > baselineLevel)
+      .sort((a, b) => (Number(a.workflowlevel) || 0) - (Number(b.workflowlevel) || 0))[0] || null;
     
-    // สำหรับเช็คที่สถานะ รอยืนยัน
     const hasLevelZero = workflowApproval.some((item) => item.workflowlevel === 0);
-    // สำหรับกรอง bookvalue ถ้ามี level 0
-    const hasLimitBelowSum = workflowApproval.some((item) => (item.limitamount ?? 0) < sumPrice && (item.workflowlevel !== 0));
-    // น้อยกว่าต้นรวม
-    const hasLimitAboveOrEqualSum = workflowApproval.some((item) => (item.limitamount ?? 0) >= sumPrice);
-    // มากกว่าต้นรวม
 
     // Validate each item
     for (const item of detailNAC) {
@@ -206,21 +267,24 @@ const validateFields = (doc: RequestCreateDocument) => {
       if ([1, 2, 3].includes(createDoc[0].nac_type ?? 0)) {
         if ([1].includes(createDoc[0].nac_status ?? 0) && [2, 3].includes(createDoc[0].nac_type ?? 0)) {
           const header = [...createDoc]
-          header[0].nac_status = lengthLessProce > 0 ? 2 : 3
+          // ถ้ามี workflow (มีคนต้องอนุมัติ) ให้เริ่มที่ status 2 (รอตรวจสอบ)
+          header[0].nac_status = sortedWorkflow.length > 0 ? 2 : 3
           setCreateDoc(header)
           await submitDoc()
+         console.log(1)
         } else if ([1].includes(createDoc[0].nac_status ?? 0) && [1].includes(createDoc[0].nac_type ?? 0)) {
           const header = [...createDoc]
           header[0].nac_status = 4
           setCreateDoc(header)
           await submitDoc()
+         console.log(2)
         } else if ([2].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].verify_by_userid = parseInt(parsedData.userid)
           header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = (workflowApproval.find(res => ((res.limitamount ?? 0) >= sumPrice) && ((res.approverid ?? 0) === parseInt(parsedData.userid))) || parsedPermission.includes(10)) ? 3 : 2
-          setCreateDoc(header)
+          header[0].nac_status = 3;
           await submitDoc()
+          console.log(3)
         } else if ([3].includes(createDoc[0].nac_status ?? 0) && [2].includes(createDoc[0].nac_type ?? 0)) {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
@@ -228,6 +292,7 @@ const validateFields = (doc: RequestCreateDocument) => {
           header[0].nac_status = 4
           setCreateDoc(header)
           await submitDoc()
+          console.log(4)
         } else if ([3].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
@@ -235,58 +300,85 @@ const validateFields = (doc: RequestCreateDocument) => {
           header[0].nac_status = 5
           setCreateDoc(header)
           await submitDoc()
+          console.log(5)
         } else if ([4].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].nac_status = 5
           setCreateDoc(header)
           await submitDoc()
+          console.log(6)
         } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].account_aprrove_id = parseInt(parsedData.userid)
           header[0].account_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
           header[0].nac_status = 6
           setCreateDoc(header)
-          await submitDoc(true) // ส่ง flag ให้ update assets
+          await submitDoc(true)
+          console.log(7)
         }
       } else if ([4, 5].includes(createDoc[0].nac_type ?? 0)) {
         if (hasLevelZero && [1].includes(createDoc[0].nac_status ?? 0)) {
-          // สถานะรอยืนยัน -> กรอก BV
           const header = [...createDoc]
           header[0].nac_status = 11
           setCreateDoc(header)
           await submitDoc()
-        } else if (hasLimitAboveOrEqualSum && hasLimitBelowSum && [11].includes(createDoc[0].nac_status ?? 0)) {
-          // กรอง BV -> รอตรวจสอบ
+         console.log(8)
+        } else if ([11].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
-          header[0].nac_status = 2
+          header[0].nac_status = sortedWorkflow.length > 0 ? 2 : 3
           setCreateDoc(header)
           await submitDoc()
-        } else if (hasLimitAboveOrEqualSum && !hasLimitBelowSum && [11].includes(createDoc[0].nac_status ?? 0)) {
-          // กรอง BV -> รออนุมัติ
-          const header = [...createDoc]
-          header[0].nac_status = 3
-          setCreateDoc(header)
-          await submitDoc()
+          console.log(9)
         } else if ([2].includes(createDoc[0].nac_status ?? 0)) {
-          //รอตรวจสอบ -> รออนุมัติ
-          const header = [...createDoc]
-          header[0].verify_by_userid = parseInt(parsedData.userid)
-          header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = (workflowApproval.find(res => ((res.limitamount ?? 0) >= sumPrice) && ((res.approverid ?? 0) === parseInt(parsedData.userid))) || parsedPermission.includes(10)) ? 3 : 2
-          setCreateDoc(header)
-          await submitDoc()
-        } else if ([3].includes(createDoc[0].nac_status ?? 0)) {
-          //รออนุมัติ -> กรอกราคาขาย
+          const header = [...createDoc];
+          header[0].verify_by_userid = parseInt(parsedData.userid);
+          header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok");
+
+          const currentLevel = checkAt?.workflowlevel ?? 0;
+          // หาคนถัดไปที่ยัง pending และ level สูงกว่าคนปัจจุบัน
+          const actualNextApprover = sortedWorkflow
+            .filter(wf => wf.status === 0 && (Number(wf.workflowlevel) || 0) > currentLevel)
+            .sort((a, b) => (Number(a.workflowlevel) || 0) - (Number(b.workflowlevel) || 0))[0] || null;
+          
+          // ตรวจสอบว่า Level 1 และ 2 อนุมัติครบหรือยัง
+          const level1Approved = sortedWorkflow.find(wf => wf.workflowlevel === 1)?.status === 1;
+          const level2Approved = sortedWorkflow.find(wf => wf.workflowlevel === 2)?.status === 1;
+          const requiredLevelsApproved = level1Approved && level2Approved;
+          
+          console.log('➡️ Next approver:', actualNextApprover?.approverid, 'level:', actualNextApprover?.workflowlevel);
+          console.log('📊 Level 1 approved:', level1Approved, 'Level 2 approved:', level2Approved);
+
+          if (parsedPermission.includes(10)) {
+            // Admin ผ่านได้เลย
+            header[0].nac_status = 3;
+            console.log('Admin bypass → set status = 3');
+          } else if (requiredLevelsApproved) {
+            // Level 1 และ 2 อนุมัติครบแล้ว → เปลี่ยนเป็นสถานะ 3
+            header[0].nac_status = 3;
+            console.log('Level 1 & 2 approved → set status = 3');
+          } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
+            // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
+            header[0].nac_status = 2;
+            console.log(`Waiting for level ${actualNextApprover.workflowlevel} to approve`);
+          } else {
+            // กรณีอื่นๆ (ไม่ควรเกิด)
+            header[0].nac_status = 3;
+            console.log('Fallback → set status = 3');
+          }
+
+          setCreateDoc(header);
+          await submitDoc();
+          console.log('✅ Status updated correctly');
+          console.log(10)
+        }else if ([3].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
           header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
           header[0].nac_status = (typeof createDoc[0].real_price === 'number' || [4].includes(createDoc[0].nac_type ?? 0)) ? 13 : 12
-          setCreateDoc(header)
-          await submitDoc()
+         setCreateDoc(header)
+         await submitDoc()
+          console.log(11)
         } else if ([12].includes(createDoc[0].nac_status ?? 0)) {
-          //กรอกราคาขาย -> รอบัญชี หรือ ปิดรายการ
-          
-          // เพิ่ม validation สำหรับ real_price เฉพาะเมื่อสถานะเป็น 12 แล้ว
           if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) {
             setOpenBackdrop(false);
             setHideBT(false);
@@ -313,54 +405,60 @@ const validateFields = (doc: RequestCreateDocument) => {
           } else if (realPrice < totalPriceSeals) {
             header[0].nac_status = 3;
           } else {
-            header[0].nac_status = 15; // รอบัญชีตรวจสอบ (ขายทรัพย์สิน)
+            header[0].nac_status = 15;
           }
           setCreateDoc(header)
           await submitDoc()
-          } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
-          //รอบัญชีตรวจสอบ (ตัดทรัพย์สิน) -> ปิดรายการ
+          console.log(12)
+        } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].account_aprrove_id = parseInt(parsedData.userid)
           header[0].account_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
           header[0].nac_status = 6
           setCreateDoc(header)
-          await submitDoc(true) // ส่ง flag ให้ update assets
+          await submitDoc(true)
+          console.log(13)
         } else if ([15].includes(createDoc[0].nac_status ?? 0)) {
-          //บัญชีตรวจสอบ (ขายทรัพย์สิน) -> การเงิน
           const header = [...createDoc]
           header[0].account_aprrove_id = parseInt(parsedData.userid)
           header[0].account_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
           header[0].nac_status = 13
           setCreateDoc(header)
           await submitDoc()
+          console.log(14)
         } else if ([13].includes(createDoc[0].nac_status ?? 0)) {
-          //การเงิน -> ปิดรายการ
           const header = [...createDoc]
           header[0].finance_aprrove_id = parseInt(parsedData.userid)
           header[0].finance_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
           header[0].nac_status = 6
           setCreateDoc(header)
-          await submitDoc(true) // ส่ง flag ให้ update assets
+          await submitDoc(true)
+          console.log(15)
         }
       }
     } else if ((textCode[0] ?? '') === 1) {
       if ([1].includes(createDoc[0].nac_status ?? 0)) {
         const header = [...createDoc]
-        header[0].nac_status = lengthLessProce > 0 ? 2 : 3
+        header[0].nac_status = sortedWorkflow.length > 0 ? 2 : 3
         setCreateDoc(header)
         await submitDoc()
-      } else if ([1].includes(createDoc[0].nac_status ?? 0) && [1].includes(createDoc[0].nac_type ?? 0)) {
-        const header = [...createDoc]
-        header[0].nac_status = 4
-        setCreateDoc(header)
-        await submitDoc()
+        console.log(16)
       } else if ([2].includes(createDoc[0].nac_status ?? 0)) {
         const header = [...createDoc]
         header[0].verify_by_userid = parseInt(parsedData.userid)
         header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok")
-        header[0].nac_status = (workflowApproval.find(res => ((res.limitamount ?? 0) >= sumPrice) && ((res.approverid ?? 0) === parseInt(parsedData.userid))) || parsedPermission.includes(10)) ? 3 : 2
+        
+        if (parsedPermission.includes(10)) {
+          header[0].nac_status = 3;
+        } else if (nextApprover && (nextApprover.workflowlevel ?? 0) < 3) {
+          header[0].nac_status = 2;
+        } else {
+          header[0].nac_status = 3;
+        }
+        
         setCreateDoc(header)
         await submitDoc()
+        console.log(17)
       } else if ([3].includes(createDoc[0].nac_status ?? 0)) {
         const header = [...createDoc]
         header[0].source_approve_userid = parseInt(parsedData.userid)
@@ -368,18 +466,21 @@ const validateFields = (doc: RequestCreateDocument) => {
         header[0].nac_status = 18
         setCreateDoc(header)
         await submitDoc()
+        console.log(18)
       } else if ([18].includes(createDoc[0].nac_status ?? 0)) {
         const header = [...createDoc]
         header[0].nac_status = 5
         setCreateDoc(header)
         await submitDoc()
+        console.log(19)
       } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
         const header = [...createDoc]
         header[0].finance_aprrove_id = parseInt(parsedData.userid)
         header[0].finance_aprrove_date = dayjs.tz(new Date(), "Asia/Bangkok")
         header[0].nac_status = 6
         setCreateDoc(header)
-        await submitDoc(true) // ส่ง flag ให้ update assets
+        await submitDoc(true)
+        console.log(20)
       }
     }
   };
@@ -449,8 +550,8 @@ const validateFields = (doc: RequestCreateDocument) => {
         if (response.status === 200) {
           const header = [...createDoc]
           header[0].nac_status = 17
-          setCreateDoc(header)
-          await submitDoc()
+         setCreateDoc(header)
+         await submitDoc()
         }
       },
       allowOutsideClick: () => !Swal.isLoading()
@@ -562,12 +663,52 @@ const validateFields = (doc: RequestCreateDocument) => {
             {([2, 3].includes(createDoc[0].nac_status ?? 0)) &&
               <>
                 {
-                  (checkAt || parsedPermission.includes(10)) &&
-                  <Button variant="contained" color="success" endIcon={<SendIcon />} onClick={() => checkWorkflow(workflowApproval, createDoc[0].sum_price ?? 0)}>APPROVED</Button>
+                  ((checkAt && currentApprover === checkAt.name) || parsedPermission.includes(10)) && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      endIcon={<SendIcon />}
+                      onClick={async () => {
+                        await checkWorkflow(workflowApproval, createDoc[0].sum_price ?? 0);
+                        if (createDoc[0]?.nac_code) {
+                          const res = await getCurrentApprover(createDoc[0].nac_code);
+                          if (Array.isArray(res) && res.length > 0) {
+                            setCurrentApprover(res[0].userid_approver);
+                          } else if (res?.userid_approver) {
+                            setCurrentApprover(res.userid_approver);
+                          } else {
+                            setCurrentApprover(null);
+                          }
+                        }
+                      }}
+                    >
+                      APPROVED
+                    </Button>
+                  )
                 }
                 {
-                  (checkAt || parsedPermission.includes(10)) &&
-                  <Button variant="contained" color="error" onClick={cancelDoc} endIcon={<DeleteIcon />}>REJECTED</Button>
+                  ((checkAt && currentApprover === checkAt.name) || parsedPermission.includes(10)) && (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      endIcon={<DeleteIcon />}
+                      onClick={async () => {
+                        await cancelDoc();
+                        if (createDoc[0]?.nac_code) {
+                          const res = await getCurrentApprover(createDoc[0].nac_code);
+                          if (Array.isArray(res) && res.length > 0) {
+                            setCurrentApprover(res[0].userid_approver);
+                          } else if (res?.userid_approver) {
+                            setCurrentApprover(res.userid_approver);
+                          } else {
+                            setCurrentApprover(null);
+                          }
+                        }
+                      }}
+                    >
+                      REJECTED
+                    </Button>
+                  )
                 }
               </>
             }
