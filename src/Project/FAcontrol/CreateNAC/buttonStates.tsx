@@ -294,12 +294,15 @@ const validateFields = (doc: RequestCreateDocument) => {
           const level1Approved = sortedWorkflow.find(wf => wf.workflowlevel === 1)?.status === 1;
           const level2Approved = sortedWorkflow.find(wf => wf.workflowlevel === 2)?.status === 1;
           const requiredLevelsApproved = level1Approved && level2Approved;
+          const checkerlist = workflowApproval.filter(res => (res.limitamount ?? 0) < (createDoc[0].sum_price ?? 0) && res.workflowlevel !== 0);
 
           if (parsedPermission.includes(10)) {
             // Admin ผ่านได้เลย
             header[0].nac_status = 3;
           } else if (requiredLevelsApproved) {
             // Level 1 และ 2 อนุมัติครบแล้ว → เปลี่ยนเป็นสถานะ 3
+            header[0].nac_status = 3;
+          }else if (checkerlist.length <= 1) {
             header[0].nac_status = 3;
           } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
             // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
