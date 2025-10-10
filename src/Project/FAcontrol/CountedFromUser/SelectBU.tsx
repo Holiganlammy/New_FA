@@ -100,6 +100,7 @@ export default function ListNacPage() {
         image_1: row.ImagePath,
         image_2: row.ImagePath_2,
         userid: parsedData.userid,
+        UserBranch : parsedData.branchid,
       }, { headers: dataConfig().header })
         .then(async res => {
           if (res.status === 200) {
@@ -161,6 +162,7 @@ export default function ListNacPage() {
         image_1: row.ImagePath,
         image_2: row.ImagePath_2,
         userid: parsedData.userid,
+        UserBranch : parsedData.branchid,
       }, { headers: dataConfig().header })
         .then(async res => {
           if (res.status === 200) {
@@ -227,6 +229,7 @@ export default function ListNacPage() {
           image_1: row.ImagePath,
           image_2: row.ImagePath_2,
           userid: parsedData.userid,
+          UserBranch : parsedData.branchid,
         }, { headers: dataConfig().header })
           .then(async res => {
             if (res.status === 200) {
@@ -449,6 +452,7 @@ export default function ListNacPage() {
                 image_1: list[index].ImagePath === imageSrc ? `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}` : list[index].ImagePath,
                 image_2: list[index].ImagePath === imageSrc ? list[index].ImagePath_2 : `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
                 userid: parsedData.userid,
+                UserBranch : parsedData.branchid,
               }, { headers: dataConfig().header })
                 .then(() => {
                   setRows(list);
