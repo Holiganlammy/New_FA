@@ -74,13 +74,25 @@ interface DataFromHeader {
   detailNAC: FAControlCreateDetail[],
   setDetailNAC: React.Dispatch<React.SetStateAction<FAControlCreateDetail[]>>;
   nac_type: number | null | undefined;
+  des_userid?: number | null;
+  nac_status?: number | null;
 }
 
-export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDetail, nac_type }: DataFromHeader) {
+export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDetail, nac_type, des_userid, nac_status }: DataFromHeader) {
   const data = localStorage.getItem('data');
   const parsedData = data ? JSON.parse(data) : null;
   const [openDialogImage, setOpenDialogImage] = React.useState(false);
   const [selectedImage, setSelectedImageImage] = React.useState<{ url: string | null; Imagtype: string, indexImg: number } | null>(null);
+  const permission = localStorage.getItem('permission_MenuID');
+  const parsedPermission = permission ? JSON.parse(permission) : null;
+
+    // เช็คว่าเป็นผู้รับมอบหรือไม่
+  const isDestinationUser = des_userid === parseInt(parsedData.userid);
+  const isAdmin = parsedPermission?.includes(10);
+
+  const canUploadFile = [4].includes(nac_status ?? 0) 
+    ? (isDestinationUser || isAdmin) 
+    : true;
 
   const handleClickOpenImage = (imageUrl: string, type: string, index: number) => {
     setSelectedImageImage({ url: imageUrl, Imagtype: type, indexImg: index });
@@ -181,11 +193,22 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
   const handleUploadFile_1 = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     e.preventDefault();
 
+    // เช็คสิทธิ์ก่อนอัพโหลด
+    if (!canUploadFile) {
+      Swal.fire({
+        icon: "warning",
+        title: 'เฉพาะผู้รับมอบเท่านั้นที่สามารถอัพโหลดไฟล์ได้',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      return;
+    }
+
     const allowedImageExtensions = ['jpg', 'png', 'gif', 'xbm', 'tif', 'pjp', 'svgz', 'jpeg', 'jfif', 'bmp', 'webp', 'svg'];
 
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const fileExtension = file.name.split('.').pop()?.toLowerCase(); // Get file extension
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
       if (fileExtension && allowedImageExtensions.includes(fileExtension)) {
         const formData_1 = new FormData();
@@ -201,11 +224,9 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
 
           const list = [...detailNAC];
 
-          // Check if the index is valid
           if (list[index]) {
-            // Make sure nacdtl_image_1 exists
             list[index].nacdtl_image_1 = `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`;
-            setDetailNAC(list); // Assuming you have a state setter for detailNAC
+            setDetailNAC(list);
             setSelectedImageImage({
               url: `${dataConfig().httpViewFile}/NEW_NAC/${response.data.attach[0].ATT}.${fileExtension}`,
               Imagtype: 'nacdtl_image_1',
@@ -220,7 +241,7 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
       } else {
         Swal.fire({
           icon: "warning",
-          title: 'ไฟล์ประเภทนี้ไม่ได้รับอนุญาติให้ใช้งานในระบบ \nใช้ได้เฉพาะ .csv, .xls, .txt, .ppt, .doc, .pdf, .jpg, .png, .gif',
+          title: 'ไฟล์ประเภทนี้ไม่ได้รับอนุญาติให้ใช้งานในระบบ \nใช้ได้เฉพาะ .jpg, .png, .gif',
           showConfirmButton: false,
           timer: 1500
         });
@@ -544,7 +565,12 @@ export default function Source({ dataAssets, detailNAC, setDetailNAC, columnDeta
                         >
                           <Tooltip title={!resDtl.nacdtl_image_1 ? 'ยังไม่มีไฟล์' : resDtl.nacdtl_image_1}>
                             {!resDtl.nacdtl_image_1 ?
-                              <IconButton color='error' aria-label="upload picture" component="label">
+                              <IconButton 
+                                color='error' 
+                                aria-label="upload picture" 
+                                component="label"
+                                disabled={!canUploadFile}
+                              >
                                 <input hidden type="file" name='file' accept='image/*'
                                   onChange={(e) => handleUploadFile_1(e, indexDtl)} />
                                 <FilePresentIcon sx={{ fontSize: '1.2rem' }} />

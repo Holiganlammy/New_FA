@@ -38,6 +38,7 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
   const checkAt = workflowApproval.find(res => (res.approverid || "") === (parsedData.UserCode || ""))
   const [hideBT, setHideBT] = React.useState<boolean>(false)
   const [currentApprover, setCurrentApprover] = React.useState<string | null>(null);
+  const isDestinationUser = createDoc[0]?.des_userid === parseInt(parsedData.userid);
 
   const validateFieldsAsset = (dtl: FAControlCreateDetail, nac_type: number, status: number) => {
     // Check if any of the required fields are missing
@@ -330,6 +331,18 @@ const validateFields = (doc: RequestCreateDocument) => {
           await submitDoc()
           console.log(5)
         } else if ([4].includes(createDoc[0].nac_status ?? 0)) {
+          if (!isDestinationUser && !parsedPermission.includes(10)) {
+            setOpenBackdrop(false);
+            setHideBT(false);
+            Swal.fire({
+              icon: "warning",
+              title: `เฉพาะผู้รับมอบเท่านั้นที่สามารถดำเนินการได้`,
+              showConfirmButton: false,
+              timer: 2000
+            });
+            return;
+          }
+          
           const header = [...createDoc]
           header[0].nac_status = 5
           setCreateDoc(header)
@@ -685,7 +698,8 @@ const validateFields = (doc: RequestCreateDocument) => {
             {
               (([11].includes(createDoc[0].nac_status ?? 0) && checkAt) ||
                 (createDoc[0].nac_code && [11, 12, 16].some((val) => parsedPermission.includes(val)) && [11, 13, 15, 5, 18, 19].includes(createDoc[0].nac_status ?? 0)) ||
-                [1, 12, 4].includes(createDoc[0].nac_status ?? 0)) &&
+                ([4].includes(createDoc[0].nac_status ?? 0) && (isDestinationUser || parsedPermission.includes(10))) ||  // เพิ่มเงื่อนไขตรงนี้
+                [1, 12].includes(createDoc[0].nac_status ?? 0)) &&
               <Button variant="contained" endIcon={<SendIcon />} onClick={() => checkWorkflow(workflowApproval, createDoc[0].sum_price ?? 0)}>SUBMIT</Button>
             }
             {([2, 3].includes(createDoc[0].nac_status ?? 0)) &&

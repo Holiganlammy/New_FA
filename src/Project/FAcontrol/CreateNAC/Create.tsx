@@ -24,6 +24,7 @@ import timezone from 'dayjs/plugin/timezone';
 import ArticleIcon from '@mui/icons-material/Article';
 import 'dayjs/locale/th'
 import client from '../../../lib/axios/interceptor';
+import { parse } from 'path';
 
 
 dayjs.extend(utc);
@@ -607,6 +608,8 @@ export default function Create() {
                   setDetailNAC={setDetailNAC}
                   columnDetail={columnDetail}
                   nac_type={createDoc[0].nac_type}
+                  des_userid={Number(createDoc[0]?.des_userid)}
+                  nac_status={createDoc[0]?.nac_status} 
                 />
                 <TableBody>
                   <SumDetail
