@@ -246,7 +246,7 @@ const validateFields = (doc: RequestCreateDocument) => {
       .filter(wf => wf.status === 0 && (Number(wf.workflowlevel) || 0) > baselineLevel)
       .sort((a, b) => (Number(a.workflowlevel) || 0) - (Number(b.workflowlevel) || 0))[0] || null;
     
-    const hasLevelZero = workflowApproval.some((item) => item.workflowlevel === 0);
+    const workflowLevelCheck = workflowApproval.some((item) => (item.workflowlevel ?? 0) > 0);
 
     // Validate each item
     for (const item of detailNAC) {
@@ -358,7 +358,7 @@ const validateFields = (doc: RequestCreateDocument) => {
           console.log(7)
         }
       } else if ([4, 5].includes(createDoc[0].nac_type ?? 0)) {
-        if (hasLevelZero && [1].includes(createDoc[0].nac_status ?? 0)) {
+        if (workflowLevelCheck && [1].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].nac_status = 11
           setCreateDoc(header)
