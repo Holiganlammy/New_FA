@@ -120,13 +120,12 @@ export default function ListNacPage() {
       // Fetch branch list
       await client.get<{ data: Branch[] }>(`/Branch_ListAll`, { headers: dataConfig().header })
         .then((response) => {
-          setBrnach(
-            response.data.data.filter(
-              (branch) =>
-                branch.branchid <= 300 ||
-                [1000005, 1000006, 1000007, 1000008].includes(branch.branchid)
-            )
+          const filteredBranches = response.data.data.filter(
+            (branch) =>
+              branch.branchid <= 300 ||
+              [1000001, 1000002, 1000003, 1000004, 1000005, 1000006, 1000007, 1000008].includes(branch.branchid)
           );
+          setBrnach(filteredBranches);
         })
     }
     fetData();
