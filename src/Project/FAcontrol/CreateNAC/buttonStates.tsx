@@ -415,13 +415,22 @@ const validateFields = (doc: RequestCreateDocument) => {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
           header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = ([4].includes(createDoc[0].nac_type ?? 0)) ? 13 : 12
-          if (typeof createDoc[0].real_price === 'number')
-          {
-            header[0].nac_status = 12
+          
+          // ถ้าเป็นตัดทรัพย์สิน (type 4) → ไป status 5 เลย
+          if ([4].includes(createDoc[0].nac_type ?? 0)) {
+            header[0].nac_status = 5; // ตัดทรัพย์สิน -> ไปบัญชี
+          } 
+          // ถ้าเป็นขายทรัพย์สิน (type 5) → ไป status 12 หรือ 13
+          else if ([5].includes(createDoc[0].nac_type ?? 0)) {
+            // ถ้ายังไม่มี → ไป 12 (รอกรอกราคาขาย)
+            if (createDoc[0].real_price === null || createDoc[0].real_price === undefined || typeof createDoc[0].real_price === 'number') 
+            {
+              header[0].nac_status = 12;   
+            }
           }
-         setCreateDoc(header)
-         await submitDoc()
+          
+          setCreateDoc(header)
+          await submitDoc()
           console.log(11)
         } else if ([12].includes(createDoc[0].nac_status ?? 0)) {
           if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) {
