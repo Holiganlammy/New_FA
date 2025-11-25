@@ -415,7 +415,11 @@ const validateFields = (doc: RequestCreateDocument) => {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
           header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = (typeof createDoc[0].real_price === 'number' || [4].includes(createDoc[0].nac_type ?? 0)) ? 13 : 12
+          header[0].nac_status = ([4].includes(createDoc[0].nac_type ?? 0)) ? 13 : 12
+          if (typeof createDoc[0].real_price === 'number')
+          {
+            header[0].nac_status = 12
+          }
          setCreateDoc(header)
          await submitDoc()
           console.log(11)
