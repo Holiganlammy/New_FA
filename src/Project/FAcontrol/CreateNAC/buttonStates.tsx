@@ -38,8 +38,7 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
   const checkAt = workflowApproval.find(res => (res.approverid || "") === (parsedData.UserCode || ""))
   const [hideBT, setHideBT] = React.useState<boolean>(false)
   const [currentApprover, setCurrentApprover] = React.useState<string | null>(null);
-  const isDestinationUser = createDoc[0]?.des_userid === parseInt(parsedData.userid);
-
+  const isDestinationUser = Number(createDoc[0]?.des_userid) === parseInt(parsedData.userid);
   const validateFieldsAsset = (dtl: FAControlCreateDetail, nac_type: number, status: number) => {
     // Check if any of the required fields are missing
     const missingFields = [];
