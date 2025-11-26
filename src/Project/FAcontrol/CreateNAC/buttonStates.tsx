@@ -699,10 +699,10 @@ const validateFields = (doc: RequestCreateDocument) => {
           (([1, 4, 11, 12, 14].includes(createDoc[0].nac_status ?? 0) || parsedPermission.includes(10)) && createDoc[0].nac_code) &&
           <Button variant="contained" color="warning" endIcon={<UpdateIcon />} onClick={() => submitDoc()}>UPDATE</Button>
         }
-        {
+        {/* {
           (checkAt || parsedPermission.includes(16)) && createDoc[0].nac_code && createDoc[0].nac_status !== 1 &&
           <Button variant="contained" color="secondary" onClick={redo} endIcon={<BackspaceIcon />}>REDO</Button>
-        }
+        } */}
         {![6].includes(createDoc[0].nac_status ?? 0) &&
           <>
             {!createDoc[0].nac_code &&
