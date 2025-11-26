@@ -39,6 +39,8 @@ export default function ButtonStates({ createDoc, setOpenBackdrop, detailNAC, id
   const [hideBT, setHideBT] = React.useState<boolean>(false)
   const [currentApprover, setCurrentApprover] = React.useState<string | null>(null);
   const isDestinationUser = Number(createDoc[0]?.des_userid) === parseInt(parsedData.userid);
+  console.log(checkAt?.name)
+  console.log('Current UserCode:', parsedData.UserCode, 'Current Approver:', currentApprover);
   const validateFieldsAsset = (dtl: FAControlCreateDetail, nac_type: number, status: number) => {
     // Check if any of the required fields are missing
     const missingFields = [];
@@ -717,52 +719,76 @@ const validateFields = (doc: RequestCreateDocument) => {
             {([2, 3].includes(createDoc[0].nac_status ?? 0)) &&
               <>
                 {
-                  ((checkAt && currentApprover === checkAt.name) || parsedPermission.includes(10)) && (
-                    <Button
-                      variant="contained"
-                      color="success"
-                      endIcon={<SendIcon />}
-                      onClick={async () => {
-                        await checkWorkflow(workflowApproval, createDoc[0].sum_price ?? 0);
-                        if (createDoc[0]?.nac_code) {
-                          const res = await getCurrentApprover(createDoc[0].nac_code);
-                          if (Array.isArray(res) && res.length > 0) {
-                            setCurrentApprover(res[0].userid_approver);
-                          } else if (res?.userid_approver) {
-                            setCurrentApprover(res.userid_approver);
-                          } else {
-                            setCurrentApprover(null);
+                  (() => {
+                    // หาว่า user คนนี้อยู่ใน workflow ไหนบ้าง
+                    const userInWorkflow = workflowApproval.filter(wf => 
+                      (wf.approverid || "") === (parsedData.UserCode || "")
+                    );
+                    
+                    // เช็คว่ามีอย่างน้อยหนึ่ง workflow ที่ user ตรงกับ currentApprover
+                    const canApprove = userInWorkflow.some(wf => 
+                      currentApprover === wf.name
+                    ) || parsedPermission.includes(10);
+                    
+                    return canApprove && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        endIcon={<SendIcon />}
+                        onClick={async () => {
+                          await checkWorkflow(workflowApproval, createDoc[0].sum_price ?? 0);
+                          if (createDoc[0]?.nac_code) {
+                            const res = await getCurrentApprover(createDoc[0].nac_code);
+                            if (Array.isArray(res) && res.length > 0) {
+                              setCurrentApprover(res[0].userid_approver);
+                            } else if (res?.userid_approver) {
+                              setCurrentApprover(res.userid_approver);
+                            } else {
+                              setCurrentApprover(null);
+                            }
                           }
-                        }
-                      }}
-                    >
-                      APPROVED
-                    </Button>
-                  )
+                        }}
+                      >
+                        APPROVED
+                      </Button>
+                    );
+                  })()
                 }
                 {
-                  ((checkAt && currentApprover === checkAt.name) || parsedPermission.includes(10)) && (
-                    <Button
-                      variant="contained"
-                      color="error"
-                      endIcon={<DeleteIcon />}
-                      onClick={async () => {
-                        await cancelDoc();
-                        if (createDoc[0]?.nac_code) {
-                          const res = await getCurrentApprover(createDoc[0].nac_code);
-                          if (Array.isArray(res) && res.length > 0) {
-                            setCurrentApprover(res[0].userid_approver);
-                          } else if (res?.userid_approver) {
-                            setCurrentApprover(res.userid_approver);
-                          } else {
-                            setCurrentApprover(null);
+                  (() => {
+                    // หาว่า user คนนี้อยู่ใน workflow ไหนบ้าง
+                    const userInWorkflow = workflowApproval.filter(wf => 
+                      (wf.approverid || "") === (parsedData.UserCode || "")
+                    );
+                    
+                    // เช็คว่ามีอย่างน้อยหนึ่ง workflow ที่ user ตรงกับ currentApprover
+                    const canReject = userInWorkflow.some(wf => 
+                      currentApprover === wf.name
+                    ) || parsedPermission.includes(10);
+                    
+                    return canReject && (
+                      <Button
+                        variant="contained"
+                        color="error"
+                        endIcon={<DeleteIcon />}
+                        onClick={async () => {
+                          await cancelDoc();
+                          if (createDoc[0]?.nac_code) {
+                            const res = await getCurrentApprover(createDoc[0].nac_code);
+                            if (Array.isArray(res) && res.length > 0) {
+                              setCurrentApprover(res[0].userid_approver);
+                            } else if (res?.userid_approver) {
+                              setCurrentApprover(res.userid_approver);
+                            } else {
+                              setCurrentApprover(null);
+                            }
                           }
-                        }
-                      }}
-                    >
-                      REJECTED
-                    </Button>
-                  )
+                        }}
+                      >
+                        REJECTED
+                      </Button>
+                    );
+                  })()
                 }
               </>
             }
