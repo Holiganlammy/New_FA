@@ -285,8 +285,10 @@ const validateFields = (doc: RequestCreateDocument) => {
           const header = [...createDoc]
           header[0].verify_by_userid = parseInt(parsedData.userid)
           header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = 3; // ถึงตรงนี้
+          // ❌ ลบบรรทัดนี้ออก: header[0].nac_status = 3; 
+          
           const currentLevel = checkAt?.workflowlevel ?? 0;
+          
           // หาคนถัดไปที่ยัง pending และ level สูงกว่าคนปัจจุบัน
           const actualNextApprover = sortedWorkflow
             .filter(wf => wf.status === 0 && (Number(wf.workflowlevel) || 0) > currentLevel)
@@ -298,21 +300,35 @@ const validateFields = (doc: RequestCreateDocument) => {
           const requiredLevelsApproved = level1Approved && level2Approved;
           const checkerlist = workflowApproval.filter(res => (res.limitamount ?? 0) < (createDoc[0].sum_price ?? 0) && res.workflowlevel !== 0);
 
+          console.log('🔍 Current Level:', currentLevel);
+          console.log('🔍 Next Approver:', actualNextApprover);
+          console.log('🔍 Level 1 Approved:', level1Approved);
+          console.log('🔍 Level 2 Approved:', level2Approved);
+          console.log('🔍 Checkerlist Length:', checkerlist.length);
+
           if (parsedPermission.includes(10)) {
             // Admin ผ่านได้เลย
             header[0].nac_status = 3;
+            console.log('✅ Admin bypass → status 3');
           } else if (requiredLevelsApproved) {
             // Level 1 และ 2 อนุมัติครบแล้ว → เปลี่ยนเป็นสถานะ 3
             header[0].nac_status = 3;
-          }else if (checkerlist.length <= 1) {
+            console.log('✅ Level 1 & 2 approved → status 3');
+          } else if (checkerlist.length <= 1) {
             header[0].nac_status = 3;
+            console.log('✅ Only 1 checker → status 3');
           } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
             // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
             header[0].nac_status = 2;
+            console.log(`⏳ Waiting for level ${actualNextApprover.workflowlevel} → status 2`);
           } else {
             // กรณีอื่นๆ (ไม่ควรเกิด)
             header[0].nac_status = 3;
+            console.log('✅ Fallback → status 3');
           }
+          
+          console.log('📌 Final status:', header[0].nac_status);
+          
           await submitDoc()
           console.log(3)
         } else if ([3].includes(createDoc[0].nac_status ?? 0) && [2].includes(createDoc[0].nac_type ?? 0)) {
