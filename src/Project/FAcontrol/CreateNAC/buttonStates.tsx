@@ -374,7 +374,22 @@ const validateFields = (doc: RequestCreateDocument) => {
          console.log(8)
         } else if ([11].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
-          header[0].nac_status = sortedWorkflow.length > 0 ? 2 : 3
+          
+          // เช็คว่ามีผู้ตรวจสอบ (checker)
+          // Checker คือ workflowlevel 1-2 และ limitamount น้อยกว่า sum_price
+          const checkerlist = workflowApproval.filter(res => 
+            (res.limitamount ?? 0) < (createDoc[0].sum_price ?? 0) && 
+            res.workflowlevel !== 0 && // ไม่เอา level 0 (bookValue)
+            (res.workflowlevel ?? 0) <= 2 // เอาแค่ level 1-2 (checker)
+          );
+          
+          // ถ้ามี checker มากกว่า 1 คน → ต้องผ่านการตรวจสอบ (status 2)
+          // ถ้าไม่มี หรือมีแค่คนเดียว → ไปอนุมัติเลย (status 3)
+          header[0].nac_status = checkerlist.length > 1 ? 2 : 3;
+          
+          console.log('Checkerlist:', checkerlist);
+          console.log('Status:', header[0].nac_status);
+          
           setCreateDoc(header)
           await submitDoc()
           console.log(9)
