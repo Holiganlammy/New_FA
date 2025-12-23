@@ -402,7 +402,7 @@ export default function Create() {
                   letterSpacing: 0,
                 }}
                 primary={
-                  workflowApproval.length > 1 ? (
+                  workflowApproval.length >= 0 ? (
                     <>
                       ผู้มีสิทธิอนุมัติ:&nbsp; &nbsp;
                       {![1].includes(createDoc[0].nac_type ?? 0) && workflowApproval

@@ -181,8 +181,8 @@ const validateFields = (doc: RequestCreateDocument) => {
         });
       }
 
-      setHideBT(true);
-      setOpenBackdrop(true);
+      // setHideBT(true);
+      // setOpenBackdrop(true);
 
       // ส่งข้อมูล Header
       const header = {
@@ -199,12 +199,12 @@ const validateFields = (doc: RequestCreateDocument) => {
 
       console.log('Header response:', res);
 
-      if (res.status === 200) {
-        const nac_code = res.data[0].nac_code;
+      // if (res.status === 200) {
+      //   const nac_code = res.data[0].nac_code;
         
-        // ส่งข้อมูล detail
-        await sendDataToAPI(nac_code, shouldUpdateAssets);
-      }
+      //   // ส่งข้อมูล detail
+      //   await sendDataToAPI(nac_code, shouldUpdateAssets);
+      // }
     } catch (error) {
       console.error("Error in submitDoc:", error);
       setOpenBackdrop(false);
@@ -284,8 +284,7 @@ const validateFields = (doc: RequestCreateDocument) => {
         } else if ([2].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].verify_by_userid = parseInt(parsedData.userid)
-          header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          // ❌ ลบบรรทัดนี้ออก: header[0].nac_status = 3; 
+          header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok") 
           
           const currentLevel = checkAt?.workflowlevel ?? 0;
           
@@ -299,12 +298,6 @@ const validateFields = (doc: RequestCreateDocument) => {
           const level2Approved = sortedWorkflow.find(wf => wf.workflowlevel === 2)?.status === 1;
           const requiredLevelsApproved = level1Approved && level2Approved;
           const checkerlist = workflowApproval.filter(res => (res.limitamount ?? 0) < (createDoc[0].sum_price ?? 0) && res.workflowlevel !== 0);
-
-          console.log('🔍 Current Level:', currentLevel);
-          console.log('🔍 Next Approver:', actualNextApprover);
-          console.log('🔍 Level 1 Approved:', level1Approved);
-          console.log('🔍 Level 2 Approved:', level2Approved);
-          console.log('🔍 Checkerlist Length:', checkerlist.length);
 
           if (parsedPermission.includes(10)) {
             // Admin ผ่านได้เลย
@@ -320,14 +313,12 @@ const validateFields = (doc: RequestCreateDocument) => {
           } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
             // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
             header[0].nac_status = 2;
-            console.log(`⏳ Waiting for level ${actualNextApprover.workflowlevel} → status 2`);
+            console.log(` Waiting for level ${actualNextApprover.workflowlevel} → status 2`);
           } else {
             // กรณีอื่นๆ (ไม่ควรเกิด)
             header[0].nac_status = 3;
             console.log('✅ Fallback → status 3');
           }
-          
-          console.log('📌 Final status:', header[0].nac_status);
           
           await submitDoc()
           console.log(3)
