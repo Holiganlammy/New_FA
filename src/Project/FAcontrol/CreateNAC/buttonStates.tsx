@@ -181,8 +181,8 @@ const validateFields = (doc: RequestCreateDocument) => {
         });
       }
 
-      // setHideBT(true);
-      // setOpenBackdrop(true);
+      setHideBT(true);
+      setOpenBackdrop(true);
 
       // ส่งข้อมูล Header
       const header = {
@@ -199,12 +199,12 @@ const validateFields = (doc: RequestCreateDocument) => {
 
       console.log('Header response:', res);
 
-      // if (res.status === 200) {
-      //   const nac_code = res.data[0].nac_code;
+      if (res.status === 200) {
+        const nac_code = res.data[0].nac_code;
         
-      //   // ส่งข้อมูล detail
-      //   await sendDataToAPI(nac_code, shouldUpdateAssets);
-      // }
+        // ส่งข้อมูล detail
+        await sendDataToAPI(nac_code, shouldUpdateAssets);
+      }
     } catch (error) {
       console.error("Error in submitDoc:", error);
       setOpenBackdrop(false);
