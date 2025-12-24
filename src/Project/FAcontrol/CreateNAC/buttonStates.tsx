@@ -382,10 +382,10 @@ const validateFields = (doc: RequestCreateDocument) => {
             res.workflowlevel !== 0 && // ไม่เอา level 0 (bookValue)
             (res.workflowlevel ?? 0) <= 2 // เอาแค่ level 1-2 (checker)
           );
-          
+          console.log(checkerlist)
           // ถ้ามี checker มากกว่า 1 คน → ต้องผ่านการตรวจสอบ (status 2)
           // ถ้าไม่มี หรือมีแค่คนเดียว → ไปอนุมัติเลย (status 3)
-          header[0].nac_status = checkerlist.length > 1 ? 2 : 3;
+          header[0].nac_status = checkerlist.length >= 1 ? 2 : 3;
           
           console.log('Checkerlist:', checkerlist);
           console.log('Status:', header[0].nac_status);
