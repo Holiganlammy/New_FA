@@ -25,6 +25,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import 'dayjs/locale/th'
 import client from '../../../lib/axios/interceptor';
 import { parse } from 'path';
+import { create } from 'domain';
 
 
 dayjs.extend(utc);
@@ -626,7 +627,7 @@ export default function Create() {
                   <TableRow>
                     <StyledTableCell align="center" sx={{ width: '20% !important' }}>
                       <Stack sx={{ justifyContent: "center", alignItems: "flex-start" }}>
-                        ผู้ทำรายการ: {parsedData.UserCode} {createDoc[0].create_date ? `[${dayjs(createDoc[0].create_date).format('DD/MM/YYYY HH:mm')}]` : `[${formatDateToDDMMYYYYHHMM(new Date())}]`}
+                        ผู้ทำรายการ: {createDoc[0].create_by} {createDoc[0].create_date ? `[${dayjs(createDoc[0].create_date).format('DD/MM/YYYY HH:mm')}]` : `[${formatDateToDDMMYYYYHHMM(new Date())}]`}
                       </Stack>
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ width: '20% !important' }}>
