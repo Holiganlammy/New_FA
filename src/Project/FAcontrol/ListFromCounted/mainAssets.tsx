@@ -2,11 +2,11 @@ import { GridActionsCellItem, GridCellParams, GridColDef, GridRenderCellParams, 
 import DataTable from "./DataTable"
 import React from "react";
 import { CountAssetRow, PeriodDescription, Assets_TypeGroup } from '../../../type/nacType';
-import { Stack, Typography, AppBar, Container, Toolbar, Autocomplete, TextField, Box, FormControl, Select, SelectChangeEvent, Dialog, DialogContent, DialogTitle, IconButton, Button, DialogActions, CssBaseline, Card, Tab, Tabs } from "@mui/material";
+import { Stack, Typography, AppBar, Container, Toolbar, Autocomplete, TextField, FormControl, Select, SelectChangeEvent, Dialog, DialogContent, DialogTitle, IconButton, Button, DialogActions, CssBaseline, Card, Tab, Tabs } from "@mui/material";
 import FindInPageIcon from '@mui/icons-material/FindInPage'
 import Chip from '@mui/material/Chip';
 import dataConfig from "../../../config";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router";
 import dayjs from 'dayjs';
 import Grid from '@mui/material/Grid2';
 import { styled } from '@mui/material/styles';
@@ -46,7 +46,6 @@ export default function ListNacPage() {
   };
 
   // state Main
-  const navigate = useNavigate();
   const pathname = window.location.pathname;
   const data = localStorage.getItem('data');
   const parsedData = data ? JSON.parse(data) : null;
@@ -65,6 +64,27 @@ export default function ListNacPage() {
     Reference: undefined,
     Position: undefined,
   });
+
+  const filterRowsBySelectedRound = React.useCallback((dataRows: CountAssetRow[], description: string | null): CountAssetRow[] => {
+    if (!description) return dataRows;
+
+    const allowedRoundIds = Array.from(
+      new Set(
+        optionDct
+          .filter((o) => o.Description === description)
+          .map((o) => String(o.PeriodID))
+          .filter((id) => !!id)
+      )
+    );
+
+    if (allowedRoundIds.length === 0) return dataRows;
+
+    const hasRoundIdInData = dataRows.some((r) => r.RoundID !== undefined && r.RoundID !== null && String(r.RoundID).length > 0);
+    if (!hasRoundIdInData) return dataRows;
+
+    const filtered = dataRows.filter((r) => allowedRoundIds.includes(String(r.RoundID ?? '')));
+    return filtered.length > 0 ? filtered : dataRows;
+  }, [optionDct]);
 
   const searchFilterByKey = (newValue: String | null | undefined, id: keyof CountAssetRow, reason: any) => {
     setFilterRows(prevFilter => {
@@ -312,10 +332,11 @@ export default function ListNacPage() {
       );
 
       if (resData.status === 200) {
-        setOriginalRows(resData.data);
+        const roundFiltered = filterRowsBySelectedRound(resData.data, optionDctString);
+        setOriginalRows(roundFiltered);
         
         // กรองข้อมูลตามเงื่อนไขปัจจุบัน
-        const filteredRows = resData.data.filter((res: CountAssetRow) =>
+        const filteredRows = roundFiltered.filter((res: CountAssetRow) =>
           Object.entries(filterRows).every(([key, value]) =>
             value === undefined || value === null || res[key as keyof CountAssetRow] === value
           )
@@ -510,8 +531,9 @@ export default function ListNacPage() {
         );
 
         if (resData.status === 200) {
-          setRows(resData.data);
-          setOriginalRows(resData.data);
+          const roundFiltered = filterRowsBySelectedRound(resData.data, newValue);
+          setRows(roundFiltered);
+          setOriginalRows(roundFiltered);
         } else {
           setRows([]);
           setOriginalRows([]);
@@ -561,7 +583,7 @@ export default function ListNacPage() {
     };
 
     fetchData();
-  }, [parsedData.UserCode, pathname]);
+  }, [parsedData.UserCode, parsedData.userid, pathname]);
 
   const handleUploadFile_1 = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
