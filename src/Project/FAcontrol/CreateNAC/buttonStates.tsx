@@ -302,14 +302,14 @@ const validateFields = (doc: RequestCreateDocument) => {
           if (parsedPermission.includes(10)) {
             // Admin ผ่านได้เลย
             header[0].nac_status = 3;
-            console.log('✅ Admin bypass → status 3');
+            console.log('Admin bypass → status 3');
           } else if (requiredLevelsApproved) {
             // Level 1 และ 2 อนุมัติครบแล้ว → เปลี่ยนเป็นสถานะ 3
             header[0].nac_status = 3;
-            console.log('✅ Level 1 & 2 approved → status 3');
+            console.log('Level 1 & 2 approved → status 3');
           } else if (checkerlist.length <= 1) {
             header[0].nac_status = 3;
-            console.log('✅ Only 1 checker → status 3');
+            console.log('Only 1 checker → status 3');
           } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
             // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
             header[0].nac_status = 2;
@@ -317,7 +317,7 @@ const validateFields = (doc: RequestCreateDocument) => {
           } else {
             // กรณีอื่นๆ (ไม่ควรเกิด)
             header[0].nac_status = 3;
-            console.log('✅ Fallback → status 3');
+            console.log('Fallback → status 3');
           }
           
           await submitDoc()
@@ -455,7 +455,7 @@ const validateFields = (doc: RequestCreateDocument) => {
           setCreateDoc(header)
           await submitDoc()
           console.log(11)
-        } else if ([12].includes(createDoc[0].nac_status ?? 0)) {
+        }else if ([12].includes(createDoc[0].nac_status ?? 0)) {
           if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) {
             setOpenBackdrop(false);
             setHideBT(false);
@@ -473,20 +473,38 @@ const validateFields = (doc: RequestCreateDocument) => {
           }, 0);
           const realPrice = createDoc[0].real_price ?? 0;
           const header = [...createDoc]
-          header[0].source_approve_userid = (realPrice) < totalPriceSeals ? null : (createDoc[0].source_approve_userid ?? null)
-          header[0].source_approve_date = (realPrice) < totalPriceSeals ? null : (createDoc[0].source_approve_date ?? null)
           
           if (realPrice === 0) {
             header[0].nac_status = 5;
-            header[0].nac_type = 4
+            header[0].nac_type = 4;
+            header[0].source_approve_userid = createDoc[0].source_approve_userid ?? null;
+            header[0].source_approve_date = createDoc[0].source_approve_date ?? null;
           } else if (realPrice < totalPriceSeals) {
             header[0].nac_status = 3;
+            header[0].source_approve_userid = null;
+            header[0].source_approve_date = null;
+            
+            try {
+              const resetResponse = await client.post(
+                '/FA_Control_Reset_Last_Approver',
+                { nac_code: createDoc[0].nac_code },
+                { headers: dataConfig().header }
+              );
+              
+              console.log('Workflow reset:', resetResponse.data);
+            } catch (error) {
+              console.error('Failed to reset workflow:', error);
+              // แม้ reset ไม่สำเร็จ ก็ยังส่ง submitDoc ต่อ
+            }
           } else {
             header[0].nac_status = 15;
+            header[0].source_approve_userid = createDoc[0].source_approve_userid ?? null;
+            header[0].source_approve_date = createDoc[0].source_approve_date ?? null;
           }
-          setCreateDoc(header)
-          await submitDoc()
-          console.log(12)
+          
+          setCreateDoc(header);
+          await submitDoc();
+          console.log(12);
         } else if ([5].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].account_aprrove_id = parseInt(parsedData.userid)
