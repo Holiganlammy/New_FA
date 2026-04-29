@@ -446,9 +446,13 @@ const validateFields = (doc: RequestCreateDocument) => {
           // ถ้าเป็นขายทรัพย์สิน (type 5) → ไป status 12 หรือ 13
           else if ([5].includes(createDoc[0].nac_type ?? 0)) {
             // ถ้ายังไม่มี → ไป 12 (รอกรอกราคาขาย)
-            if (createDoc[0].real_price === null || createDoc[0].real_price === undefined || typeof createDoc[0].real_price === 'number') 
+            // console.log('Checking real_price for status 12 transition:', createDoc[0].real_price);
+            // console.log('Type of real_price:', typeof createDoc[0].real_price);
+            if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) 
             {
-              header[0].nac_status = 12;   
+              header[0].nac_status = 12; // ขายทรัพย์สิน -> รอกรอกราคาขาย
+            } else if (createDoc[0].real_price >= 0) {
+              header[0].nac_status = 15; // ขายทรัพย์สิน -> ไปรอตรวจสอบบัญชี
             }
           }
           

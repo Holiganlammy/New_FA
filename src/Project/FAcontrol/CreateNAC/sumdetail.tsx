@@ -173,6 +173,7 @@ export default function SumDetail({ detailNAC, dataAssets, idSection, createDoc,
               name="numberformat"
               id="formatted-numberformat-input"
               required={[12].includes(createDoc[0].nac_status ?? 0)}
+              disabled={[3].includes(createDoc[0].nac_status ?? 0)}
               error={[12].includes(createDoc[0].nac_status ?? 0) && 
                     (createDoc[0].real_price === null || createDoc[0].real_price === undefined)}
               value={(typeof createDoc[0].real_price === 'number') ? createDoc[0].real_price : ""}
@@ -202,6 +203,7 @@ export default function SumDetail({ detailNAC, dataAssets, idSection, createDoc,
                   hours: renderDigitalClockTimeView,
                   seconds: null,
                 }}
+                disabled={[3].includes(createDoc[0].nac_status ?? 0)}
                 value={dayjs(createDoc[0].realPrice_Date) ?? ""}
                 closeOnSelect={true}
                 sx={{ width: '100%' }}
