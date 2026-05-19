@@ -330,15 +330,36 @@ const validateFields = (doc: RequestCreateDocument) => {
           setCreateDoc(header)
           await submitDoc()
           console.log(4)
-        } else if ([3].includes(createDoc[0].nac_status ?? 0)) {
+        } 
+        else if ([3].includes(createDoc[0].nac_status ?? 0)) {
           const header = [...createDoc]
           header[0].source_approve_userid = parseInt(parsedData.userid)
           header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
-          header[0].nac_status = 5
+          console.log([3].includes(createDoc[0].nac_type ?? 0))
+          
+          // ถ้าเป็นตัดทรัพย์สิน (type 4) → ไป status 5 เลย
+          // type 3 ขายทรัพย์สิน แต่ราคาขายเป็น 0 → ไปตัดทรัพย์สินเลย
+          // type 4 ตัดทรัพย์สิน
+          if ([3].includes(createDoc[0].nac_type ?? 0)) {
+            header[0].nac_type = 4; // เปลี่ยนเป็นตัดทรัพย์สินเลย
+            header[0].nac_status = 5; // ตัดทรัพย์สิน -> ไปบัญชี
+          } 
+          // // ถ้าเป็นขายทรัพย์สิน (type 5) → ไป status 12 หรือ 13
+          else if ([4].includes(createDoc[0].nac_type ?? 0)) {
+            // ถ้ายังไม่มี → ไป 12 (รอกรอกราคาขาย)
+            if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) 
+            {
+              header[0].nac_status = 12; // ขายทรัพย์สิน -> รอกรอกราคาขาย
+            } else if (createDoc[0].real_price >= 0) {
+              header[0].nac_status = 15; // ขายทรัพย์สิน -> ไปรอตรวจสอบบัญชี
+            }
+          }
+          
           setCreateDoc(header)
           await submitDoc()
           console.log(5)
-        } else if ([4].includes(createDoc[0].nac_status ?? 0)) {
+        } 
+        else if ([4].includes(createDoc[0].nac_status ?? 0)) {
           if (!isDestinationUser && !parsedPermission.includes(10)) {
             setOpenBackdrop(false);
             setHideBT(false);
@@ -434,32 +455,39 @@ const validateFields = (doc: RequestCreateDocument) => {
           await submitDoc();
           console.log('✅ Status updated correctly');
           console.log(10)
-        }else if ([3].includes(createDoc[0].nac_status ?? 0)) {
-          const header = [...createDoc]
-          header[0].source_approve_userid = parseInt(parsedData.userid)
-          header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
+        }
+        // else if ([3].includes(createDoc[0].nac_status ?? 0)) {
+          // const header = [...createDoc]
+          // header[0].source_approve_userid = parseInt(parsedData.userid)
+          // header[0].source_approve_date = dayjs.tz(new Date(), "Asia/Bangkok")
           
-          // ถ้าเป็นตัดทรัพย์สิน (type 4) → ไป status 5 เลย
-          if ([4].includes(createDoc[0].nac_type ?? 0)) {
-            header[0].nac_status = 5; // ตัดทรัพย์สิน -> ไปบัญชี
-          } 
-          // ถ้าเป็นขายทรัพย์สิน (type 5) → ไป status 12 หรือ 13
-          else if ([5].includes(createDoc[0].nac_type ?? 0)) {
-            // ถ้ายังไม่มี → ไป 12 (รอกรอกราคาขาย)
-            // console.log('Checking real_price for status 12 transition:', createDoc[0].real_price);
-            // console.log('Type of real_price:', typeof createDoc[0].real_price);
-            if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) 
-            {
-              header[0].nac_status = 12; // ขายทรัพย์สิน -> รอกรอกราคาขาย
-            } else if (createDoc[0].real_price >= 0) {
-              header[0].nac_status = 15; // ขายทรัพย์สิน -> ไปรอตรวจสอบบัญชี
-            }
-          }
+          // // ถ้าเป็นตัดทรัพย์สิน (type 4) → ไป status 5 เลย
+          // if ([3].includes(createDoc[0].nac_type ?? 0)) {
+          //   header[0].nac_status = 5; // ตัดทรัพย์สิน -> ไปบัญชี
+          //   console.log('Type 4 → status 5');
+          // } 
+          // // ถ้าเป็นขายทรัพย์สิน (type 5) → ไป status 12 หรือ 13
+          // else if ([4].includes(createDoc[0].nac_type ?? 0)) {
+          //   console.log('Checking real_price for type 4:', createDoc[0].real_price);
+          //   // ถ้ายังไม่มี → ไป 12 (รอกรอกราคาขาย)
+          //   // console.log('Checking real_price for status 12 transition:', createDoc[0].real_price);
+          //   // console.log('Type of real_price:', typeof createDoc[0].real_price);
+          //   if ((createDoc[0].real_price ?? 0) >= 1) 
+          //   {
+          //     console.log('Real price is valid for status 12 transition:', createDoc[0].real_price);
+          //     header[0].nac_status = 12; // ขายทรัพย์สิน -> รอกรอกราคาขาย
+          //   } else if ((createDoc[0].real_price ?? 0) === 0) {
+          //     console.log('Real price is zero, transitioning to status 15:', createDoc[0].real_price);
+          //     header[0].nac_type = 3; // ขายทรัพย์สิน แต่ราคาขายเป็น 0 -> ไปตัดทรัพย์สินเลย
+          //     header[0].nac_status = 15; // ขายทรัพย์สิน -> ไปรอตรวจสอบบัญชี
+          //   }
+          // }
           
-          setCreateDoc(header)
-          await submitDoc()
-          console.log(11)
-        }else if ([12].includes(createDoc[0].nac_status ?? 0)) {
+          // setCreateDoc(header)
+          // await submitDoc()
+          // console.log(11)
+        // }
+        else if ([12].includes(createDoc[0].nac_status ?? 0)) {
           if (createDoc[0].real_price === null || createDoc[0].real_price === undefined) {
             setOpenBackdrop(false);
             setHideBT(false);
