@@ -1,8 +1,8 @@
-import { ListNACHeaders } from '../../../type/nacType';
+import { Period } from '../../../type/nacType';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-export const exportToExcel = (rows: ListNACHeaders[]) => {
+export const exportToExcel = (rows: Period[]) => {
 
   const getFormattedDate = (): string => {
     const today: Date = new Date();
@@ -27,19 +27,18 @@ export const exportToExcel = (rows: ListNACHeaders[]) => {
   const formattedDate: string = getFormattedDate();
 
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('NAC Data');
+  const worksheet = workbook.addWorksheet('Period Data');
 
   // Define headers
   const headers = [
-    { header: 'รหัสใบงาน', key: 'nac_code' },
-    { header: 'หัวข้อรายการ', key: 'name' },
-    { header: 'ผู้สร้างรายการ', key: 'create_by' },
-    { header: 'วันที่ทำรายการ', key: 'create_date' },
-    { header: 'ผู้ส่งมอบ', key: 'source_userid' },
-    { header: 'ผู้รับมอบ', key: 'des_userid' },
-    { header: 'สถานะ', key: 'status_name' },
-    { header: 'ยอดรวม', key: 'sum_price' },
-    { header: 'ผู้ตรวจสอบ/อนุมัติ', key: 'userid_approver' }
+    { header: 'Period ID', key: 'PeriodID' },
+    { header: 'รายละเอียด', key: 'Description' },
+    { header: 'วันที่เริ่มต้น', key: 'BeginDate' },
+    { header: 'วันที่สิ้นสุด', key: 'EndDate' },
+    { header: 'สาขา', key: 'BranchID' },
+    { header: 'แผนก', key: 'DepCode' },
+    { header: 'รหัสพนักงาน', key: 'personID' },
+    { header: 'Code', key: 'Code' },
   ];
 
   // Add headers to worksheet
@@ -73,13 +72,14 @@ export const exportToExcel = (rows: ListNACHeaders[]) => {
   rows.forEach(item => {
     const formattedItem = {
       ...item,
-      create_date: item.create_date ? formatDateTime(item.create_date) : '',
+      BeginDate: item.BeginDate ? formatDateTime(item.BeginDate as any) : '',
+      EndDate: item.EndDate ? formatDateTime(item.EndDate as any) : '',
     };
 
     const row = worksheet.addRow(formattedItem);
 
-    // Apply border, alignment, and status-specific font color
-    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    // Apply border and alignment
+    row.eachCell({ includeEmpty: true }, (cell, _colNumber) => {
       cell.alignment = {
         wrapText: true,
         horizontal: 'left',
@@ -92,11 +92,10 @@ export const exportToExcel = (rows: ListNACHeaders[]) => {
         right: { style: 'thin' }
       };
 
-      // Apply font color based on the status_name value
-      if (headers[colNumber - 1].key === 'status_name') {
+      if (false) {
         switch (cell.value) {
-          case 'รอกรอก Book Value':
-            cell.font = { color: { argb: 'FFD700' } }; // Yellow
+          case 'placeholder':
+            cell.font = { color: { argb: 'FFD700' } };
             break;
           case 'รอยืนยันรายการ':
           case 'รอตรวจสอบ':

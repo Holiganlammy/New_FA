@@ -18,8 +18,8 @@ export default function CustomToolbar({ rows }: Readonly<DataTable>) {
         <Box sx={{ flexGrow: 1 }} />
         {rows && (
           <Button size="small" color="primary" startIcon={<SystemUpdateAltIcon />}
-            disabled
-          // onClick={() => exportToExcel(rows)}
+            // disabled
+          onClick={() => exportToExcel(rows)}
           >
             Export
           </Button>
