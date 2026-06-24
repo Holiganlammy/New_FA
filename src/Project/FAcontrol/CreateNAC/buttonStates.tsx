@@ -400,41 +400,30 @@ const validateFields = (doc: RequestCreateDocument) => {
           header[0].verify_by_userid = parseInt(parsedData.userid);
           header[0].verify_date = dayjs.tz(new Date(), "Asia/Bangkok");
 
-          const currentLevel = checkAt?.workflowlevel ?? 0;
-          // หาคนถัดไปที่ยัง pending และ level สูงกว่าคนปัจจุบัน
-          const actualNextApprover = sortedWorkflow
-            .filter(wf => wf.status === 0 && (Number(wf.workflowlevel) || 0) > currentLevel)
-            .sort((a, b) => (Number(a.workflowlevel) || 0) - (Number(b.workflowlevel) || 0))[0] || null;
-          
-          // ตรวจสอบว่า Level 1 และ 2 อนุมัติครบหรือยัง
-          const level1Approved = sortedWorkflow.find(wf => wf.workflowlevel === 1)?.status === 1;
-          const level2Approved = sortedWorkflow.find(wf => wf.workflowlevel === 2)?.status === 1;
-          const requiredLevelsApproved = level1Approved && level2Approved;
-          
-          console.log('➡️ Next approver:', actualNextApprover?.approverid, 'level:', actualNextApprover?.workflowlevel);
-          console.log('📊 Level 1 approved:', level1Approved, 'Level 2 approved:', level2Approved);
+          // รายชื่อผู้ตรวจสอบทั้งหมด (limitamount < sum_price, ไม่นับ level 0)
+          const checkerlist = workflowApproval.filter(res =>
+            (res.limitamount ?? 0) < (createDoc[0].sum_price ?? 0) &&
+            res.workflowlevel !== 0
+          );
+
+          // ผู้ตรวจสอบที่ยังค้างอยู่ (ไม่นับตัวเองที่กำลัง approve)
+          const remainingCheckers = checkerlist.filter(wf =>
+            wf.status === 0 && (wf.approverid || "") !== (parsedData.UserCode || "")
+          );
 
           if (parsedPermission.includes(10)) {
             // Admin ผ่านได้เลย
             header[0].nac_status = 3;
-            console.log('Admin bypass → set status = 3');
-          } else if (requiredLevelsApproved) {
-            // Level 1 และ 2 อนุมัติครบแล้ว → เปลี่ยนเป็นสถานะ 3
-            header[0].nac_status = 3;
-            console.log('Level 1 & 2 approved → set status = 3');
-          } else if (actualNextApprover && (actualNextApprover.workflowlevel ?? 0) <= 2) {
-            // ยังมีผู้อนุมัติ Level 1-2 ที่ยัง pending
+          } else if (remainingCheckers.length > 0) {
+            // ยังมีผู้ตรวจสอบที่ยัง pending → คงอยู่ที่ status 2
             header[0].nac_status = 2;
-            console.log(`Waiting for level ${actualNextApprover.workflowlevel} to approve`);
           } else {
-            // กรณีอื่นๆ (ไม่ควรเกิด)
+            // ตรวจสอบครบทุกคนแล้ว → ไปอนุมัติ (status 3)
             header[0].nac_status = 3;
-            console.log('Fallback → set status = 3');
           }
 
           setCreateDoc(header);
           await submitDoc();
-          console.log('✅ Status updated correctly');
           console.log(10)
         }else if ([3].includes(createDoc[0].nac_status ?? 0)) {
             const header = [...createDoc]
