@@ -833,7 +833,7 @@ export default function ListNacPage() {
                 style={{ width: '100%', height: 'auto', maxWidth: '400px', maxHeight: '60vh' }}
                 onError={({ currentTarget }) => {
                   currentTarget.onerror = null; // prevents looping
-                  currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png";
+                  currentTarget.src = "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image";
                 }}
               />
               <Button

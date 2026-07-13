@@ -270,7 +270,7 @@ export default function ListNacPage() {
                 <ImageList sx={{ height: 140, objectFit: 'cover', cursor: 'pointer' }} cols={2}>
                   <div>
                     <ImageCell
-                      imagePath={res.ImagePath ?? 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png'}
+                      imagePath={res.ImagePath ?? 'https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image'}
                       name={'Image 1'}
                       originalRows={originalRows}
                       rows={rows}
@@ -283,7 +283,7 @@ export default function ListNacPage() {
                   </div>
                   <div>
                     <ImageCell
-                      imagePath={res.ImagePath_2 ?? 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png'}
+                      imagePath={res.ImagePath_2 ?? 'https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image'}
                       name={'Image '}
                       originalRows={originalRows}
                       rows={rows}

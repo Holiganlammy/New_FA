@@ -116,10 +116,10 @@ export default function ScanVerifly({ qrText }: Readonly<ScanVeriflyProps>) {
                 height="160"
                 sx={{ objectFit: 'cover', cursor: 'pointer', p: 1 }}
                 onClick={() => handleClickOpen(qrData[0]?.ImagePath, 0)}
-                image={qrData[0]?.ImagePath || "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png"}
+                image={qrData[0]?.ImagePath || "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image"}
                 onError={({ currentTarget }) => {
                   currentTarget.onerror = null; // prevents looping
-                  currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png";
+                  currentTarget.src = "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image";
                 }}
                 alt={`${qrData[0]?.Name}_1`}
               />
@@ -130,10 +130,10 @@ export default function ScanVerifly({ qrText }: Readonly<ScanVeriflyProps>) {
                 height="160"
                 sx={{ objectFit: 'cover', cursor: 'pointer', p: 1 }}
                 onClick={() => handleClickOpen(qrData[0]?.ImagePath_2, 1)}
-                image={qrData[0]?.ImagePath_2 || "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png"}
+                image={qrData[0]?.ImagePath_2 || "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image"}
                 onError={({ currentTarget }) => {
                   currentTarget.onerror = null; // prevents looping
-                  currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png";
+                  currentTarget.src = "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image";
                 }}
                 alt={`${qrData[0]?.Name}_2`}
               />
@@ -187,7 +187,7 @@ export default function ScanVerifly({ qrText }: Readonly<ScanVeriflyProps>) {
               style={{ width: '100%', height: 'auto' }}
               onError={({ currentTarget }) => {
                 currentTarget.onerror = null; // prevents looping
-                currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/1200px-No-Image-Placeholder.svg.png";
+                currentTarget.src = "https://dummyimage.com/300x300/e5e7eb/6b7280.png&text=No+Image";
               }}
             />
           </Stack>
